@@ -2,16 +2,62 @@
 # -*- coding: utf-8 -*-
 # @Time       : 2022/3/28 10:22 下午
 # @Author     : zzhen
-# @File       : util.py.py
+# @File       : utils.py.py
 # @Software   : PyCharm
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 from collections import defaultdict
-import re
 import sys
-import subprocess
 import os
 import glob
+from sys import getsizeof, stderr
+from itertools import chain
+from collections import deque
+
+try:
+    from reprlib import repr
+except ImportError:
+    pass
+
+
+def total_size(o, handlers=None, verbose=False):
+    """ Returns the approximate memory footprint an object and all of its contents.
+    Automatically finds the contents of the following builtin containers and
+    their subclasses:  tuple, list, deque, dict, set and frozenset.
+    To search other containers, add handlers to iterate over their contents:
+        handlers = {SomeContainerClass: iter,
+                    OtherContainerClass: OtherContainerClass.get_elements}
+    """
+    if handlers is None:
+        handlers = {}
+    dict_handler = lambda dst: chain.from_iterable(dst.items())
+    all_handlers = {tuple: iter,
+                    list: iter,
+                    deque: iter,
+                    dict: dict_handler,
+                    set: iter,
+                    frozenset: iter,
+                    }
+    all_handlers.update(handlers)  # user handlers take precedence
+    seen = set()  # track which object id's have already been seen
+    default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
+
+    def sizeof(obj):
+        if id(obj) in seen:  # do not double count the same object
+            return 0
+        seen.add(id(obj))
+        s = getsizeof(obj, default_size)
+
+        if verbose:
+            print(s, type(obj), repr(obj), file=stderr)
+
+        for typ, handler in all_handlers.items():
+            if isinstance(obj, typ):
+                s += sum(map(sizeof, handler(obj)))
+                break
+        return s
+
+    return sizeof(o)
 
 
 # 反向互补
@@ -122,7 +168,6 @@ def get_ref_info(reference_path: str) -> tuple:
     # 记录reference文件的路径信息
     _ref_path_dict_ = defaultdict(str)
     for ref_file_path in _ref_path_list_:
-        ref_seq_count = 0
         if judge_type(ref_file_path) == 2:
             # 通过参考文件的文件名来标定不同的参考基因
             file_name_gene = os.path.basename(ref_file_path).split('.')[0]
@@ -135,9 +180,9 @@ def get_ref_info(reference_path: str) -> tuple:
 
 
 # 创建哈西字典,将reference存入字典中
-# _ref_reverse_complete_会影响建立的哈西字典的大小
-# 如果要节约内存，将_ref_reverse_complete_设置为False,那么在过滤测序数据时，需要对read进行reverse complement
-def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_complete_: bool = False,
+# _ref_reverse_complement_会影响建立的哈西字典的大小
+# 如果要节约内存，将_ref_reverse_complement_设置为False,那么在过滤测序数据时，需要对read进行reverse complement
+def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_complement_: bool = False,
                        _pos_: bool = True, _print_: bool = True) -> dict:
     # 从reference文件中获取文件路径列表
     files_list = get_file_list(reference_path)
@@ -179,8 +224,8 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                     # list[1] 是kmer出现位置 list[2:]是该kmer在哪些文件(基因)中出现
                     # sys.intern(ref_kmer)用于加快内存
                     ref_kmer_dict[sys.intern(ref_kmer)] = kmer_info_list
-            # _ref_reverse_complete_ 对reference中的序列进行反向互补
-            if _ref_reverse_complete_:
+            # _ref_reverse_complement_ 对reference中的序列进行反向互补
+            if _ref_reverse_complement_:
                 ref_seq = reverse_complement_limit(ref_seq)
                 for j in range(0, len(ref_seq) - _kmer_size_ + 1):
                     kmer_info_list, ref_kmer = [], ref_seq[j:j + _kmer_size_]
@@ -199,7 +244,7 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
             # json.dumps(my_dictionary)后面进行检测
             # print(json.dumps(ref_kmer_dict))
             if _print_:
-                print('Mem.:', round(sys.getsizeof(ref_kmer_dict) / 300 / 500 / 1024, 2), 'G, Num. of Seq:',
+                print('Mem.:', round(total_size(ref_kmer_dict) / 1024 / 1024 / 1024, 2), 'G, Num. of Seq:',
                       gene_number_count, end='\r')
         infile.close()
     return ref_kmer_dict
@@ -233,27 +278,3 @@ def dynamic_limit(_read_kmer_dict_: dict, gen_avg_len: int, ref_rate: int = 1.5,
         if (F0 - sum_f) / 2 < gen_avg_len * ref_rate:
             return max(2, x)
     return 2
-
-
-# https://apple.stackexchange.com/questions/423717/is-there-a-command-line-tool-that-accurately-describes-the-amount-of-used-memory
-# only for macOS
-def getMemory() -> dict:
-    f1 = 0.00000000093132257  # 1/(1024*1024*1024) Converts bytes to GB
-    # Get memory info from VM_STAT and process into a dictionary
-    vm = subprocess.Popen(['vm_stat'], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-    # Process vm_stat
-    vmLines = vm.split('\n')
-    sep = re.compile(':[\\s]+')
-    vmStats = {}
-    for row in range(1, len(vmLines) - 2):
-        rowElements = sep.split(vmLines[row].strip())
-        vmStats[(rowElements[0])] = int(rowElements[1].strip(".")) * 4096
-    MemoryInfo = {'Total': vmStats["Pages free"] + vmStats["Pages wired down"] + vmStats["Pages active"] + vmStats[
-        "Pages inactive"] + vmStats["Pages speculative"] + vmStats["Pages throttled"] + vmStats[
-                               "Pages occupied by compressor"] * f1,
-                  'Free': vmStats["Pages free"] * f1,
-                  'Wired': vmStats["Pages wired down"] * f1, 'Active': vmStats["Pages active"] * f1,
-                  'Inactive': vmStats["Pages inactive"] * f1, 'Speculative': vmStats["Pages speculative"] * f1,
-                  'Throttled': vmStats["Pages throttled"] * f1,
-                  'Compressed': vmStats["Pages occupied by compressor"] * f1}
-    return MemoryInfo

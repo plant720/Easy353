@@ -9,9 +9,12 @@
 import os
 import shutil
 import argparse
-import util
 import multiprocessing
 import collections
+
+# import my python file
+from src.utils import make_ref_kmer_dict, get_seq_avg_length, reverse_complement_limit, \
+    get_reads_info, get_file_list, log
 
 
 # 获取list的中位数
@@ -42,13 +45,13 @@ def reverse(seq):
 # read_kmer_dict用于记录过滤后的read拆分后的kmer key:read_kmer value:[read_count,read_pos]
 # _read_file_list_:用于拼接的测序文件列表 _kmer_size_ _ref_kmer_dict_:参考序列的kmer字典
 def make_assemble_hash_dict(_read_file_: str, _ref_file_: str, _kmer_size_: int,
-                            _ref_reverse_complete_: bool = False, _read_reverse_complement_: bool = False,
+                            _ref_reverse_complement_: bool = False, _read_reverse_complement_: bool = False,
                             _pos_: bool = True, _print_: bool = True) -> tuple:
     # 从参考文件中获取种子字典
-    _ref_kmer_dict_ = util.make_ref_kmer_dict(_ref_file_, _kmer_size_, _ref_reverse_complete_, _pos_,
-                                              _print_=False)
+    _ref_kmer_dict_ = make_ref_kmer_dict(_ref_file_, _kmer_size_, _ref_reverse_complement_, _pos_,
+                                         _print_=False)
     # 获取参考序列平均长度
-    _ref_avg_length = util.get_seq_avg_length(_ref_file_)
+    _ref_avg_length = get_seq_avg_length(_ref_file_)
     read_kmer_dict = collections.defaultdict(list)
     infile = open(_read_file_, 'r', encoding='utf-8', errors='ignore')
     infile.readline()
@@ -61,7 +64,7 @@ def make_assemble_hash_dict(_read_file_: str, _ref_file_: str, _kmer_size_: int,
         # 该处由于已经是成对的reads，所以不应该对reads进行返回反向互补的操作
         reads_seqs = [_read_seq_]
         if _read_reverse_complement_:
-            reads_seqs.append(util.reverse_complement_limit(_read_seq_))
+            reads_seqs.append(reverse_complement_limit(_read_seq_))
         for _seq_ in reads_seqs:
             # 用于标识当前read产生的kmer是否在参考序列中，如果一个kmer在参考序列中，则flag置为true,记录位置信息，
             # 并将后续kmer也添加在参考序列中
@@ -160,13 +163,13 @@ def assemble_read_for_contig(_read_kmer_dict_: dict, _seed_: str, iteration: int
     right, pos_1, reads_list_1, kmer_count_1 = \
         assemble_contig_forward(_read_kmer_dict_, _seed_, iteration)
     left, pos_2, reads_list_2, kmer_count_2 = \
-        assemble_contig_forward(_read_kmer_dict_, util.reverse_complement_limit(_seed_), iteration)
+        assemble_contig_forward(_read_kmer_dict_, reverse_complement_limit(_seed_), iteration)
     # 返回一个元组 (拼接的contig,reads_list包含所有被访问过的reads)
     _pos_all_ = [x for x in pos_1 + pos_2 if x > 0]
     min_pos, max_pos = 0, 1
     if _pos_all_:
         min_pos, max_pos = min(_pos_all_), max(_pos_all_)
-    return (util.reverse_complement_limit(''.join(left)) + _seed_ + ''.join(right),
+    return (reverse_complement_limit(''.join(left)) + _seed_ + ''.join(right),
             min_pos, max_pos, reads_list_1 + reads_list_2, len(set(reads_list_1 + reads_list_2)),
             kmer_count_1 + kmer_count_2)
 
@@ -244,7 +247,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     # 设定输出文件名
     gene_name = os.path.basename(_ref_file_).split(".")[0]
     # 根据_ref_file_获取gene的平均长度和ref中的序列数量
-    ref_seq_count, ref_seq_length = util.get_reads_info(_ref_file_)
+    ref_seq_count, ref_seq_length = get_reads_info(_ref_file_)
     gene_avg_len = round(ref_seq_length / ref_seq_count, 2)
 
     _log_file_ = os.path.join(_out_dir_, "assemble_log.txt")
@@ -254,16 +257,16 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     assemble_success_flag = False
     is_normal_contig = False
     gene_info = {"assemble_success_flag": assemble_success_flag, "contig_length": 0, "short_contig_length": 0,
-                 "scaffold_length": 0, "filter_reads_count": 0, "kmer_count": 0,
-                 "used_kmer_count": 0, "seed": "", "assemble_kmer_size": _assemble_kmer_size_,
+                 "scaffold_length": 0, "filter_reads_count": 0, "kmer_usage_rate": 0,
+                 "seed": "", "assemble_kmer_size": _assemble_kmer_size_,
                  "kmer_limit": _kmer_limit_count_, "kmer_coverage_depth": 0}
     # read 产生的Kmer总数和不同种类Kmer的数量
     # ref_seq 产生的Kmer总数和不同种类Kmer的数量
     assemble_gene_info_dict[gene_name] = gene_info
-    print("Assembling the {} gene".format(gene_name).center(50))
+    print("Assembling the {} gene".format(gene_name))
     # 当read文件不存在时,返回False
     if not os.path.isfile(_reads_file_):
-        print("Reads file of {} gene doesn't exist".format(gene_name).ljust(50))
+        print("Reads file of {} gene doesn't exist".format(gene_name))
         return assemble_gene_info_dict
 
     # 根据读长文件和参考序列文件 获取read_kmer_dict 和 ref_kmer_dict
@@ -274,14 +277,14 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
         # 当read_kmer_dict为0,认为是_short_contig_path_ 产生一个空文件
         with open(_short_contig_path_, 'w'):
             pass
-        print("Reads file of {} gene doesn't have enough reads".format(gene_name).ljust(50))
+        print("Reads file of {} gene doesn't have enough reads".format(gene_name))
         return assemble_gene_info_dict
 
     # # todo:修改为动态limit
     # if _kmer_limit_count_ < 0:
     #     _kmer_limit_count_ = util.dynamic_limit(_read_kmer_dict_, gene_avg_len, 2)
 
-    # 根据kmer出现次数和是否在参考序列字典中 保留在参考序列字典中的kmer,删除出现数量低的limit
+    # 根据kmer出现次数和是否在参考序列字典中 保留在参考序列字典中的kmer,删除出现数量低的kmer
     if _kmer_limit_count_ > 0:
         # kmer_dict中出现次数小于limit 且 在参考序列中没有出现 的kmer删除
         _filter_ = [_kmer_ for _kmer_ in _read_kmer_dict_ if _read_kmer_dict_[_kmer_][0] <= _kmer_limit_count_]
@@ -292,51 +295,45 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
         # 用于清理内存
         del _filter_
 
-    # todo:使用used_kmer_count*kmer_size / unique_kmer_count 计算contig的覆盖率
     # 获取reads数量信息
-    filter_reads_count, filter_reads_length = util.get_reads_info(_reads_file_)
-    # 根据reads总长度和不同k-mer数量计算覆盖度
-    a = [i[0] for i in _read_kmer_dict_.values()]
-    kmer_count = sum([i[0] for i in _read_kmer_dict_.values()])
-    unique_kmer_count = len(_read_kmer_dict_.keys())
-    # 覆盖深度
-    kmer_coverage_depth = round(filter_reads_length / (unique_kmer_count + _assemble_kmer_size_ - 1), 2)
+    filter_reads_count, _ = get_reads_info(_reads_file_)
 
-    # Todo:动态权重
     # 从ref_dict中获取种子 即同时出现在ref_dict和kmer_dict中的kmer
     # seed_list = [(x, _ref_kmer_dict_[x][0], _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in _ref_kmer_dict_
     #              if x in _read_kmer_dict_]
-    # print("Seed list: {}".format(seed_list))
 
-    seed_list = [x for x in _ref_kmer_dict_ if x in _read_kmer_dict_]
-    ref_kmer_count = [_ref_kmer_dict_[i][0] for i in seed_list]
-    read_kmer_count = [_read_kmer_dict_[i][0] for i in seed_list]
-    # print("the length of ref_kmer_count is {}".format(len(ref_kmer_count)))
-    # print("the length of read_kmer_count is {}".format(len(read_kmer_count)))
-    # print(sorted(ref_kmer_count))
-    # print(sorted(read_kmer_count))
-    # print("The median of ref_kmer_count is {}".format(get_median(ref_kmer_count)))
-    # print("The median of read_kmer_count is {}".format(get_median(read_kmer_count)))
+    # 设定种子的权重 选取在read中和ref中都存在的kmer
+    # 种子的权重使用 ref_kmer的出现次数/ ref_kmer的出现的中位数 * read_kmer的出现次数/ read_kmer的出现的中位数
+    shared_seed = [x for x in _ref_kmer_dict_ if x in _read_kmer_dict_]
+    ref_kmer_count = [_ref_kmer_dict_[i][0] for i in shared_seed]
+    read_kmer_count = [_read_kmer_dict_[i][0] for i in shared_seed]
 
-    seed_list = [(x, _ref_kmer_dict_[x][0]/get_median(ref_kmer_count) * _read_kmer_dict_[x][0] / get_median(read_kmer_count), _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in seed_list]
-    # print("Seed list: {}".format(seed_list))
-    # 根据kmer出现数量进行排序
+    seed_list = [(x, _ref_kmer_dict_[x][0] / get_median(ref_kmer_count) * _read_kmer_dict_[x][0]
+                  / get_median(read_kmer_count), _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in shared_seed]
+    read_kmer_count_sum = sum(read_kmer_count)
+    del shared_seed, ref_kmer_count, read_kmer_count
+
+    # 根据kmer权重进行排序
     list.sort(seed_list, key=lambda x: x[1], reverse=True)
 
     # 当seed_dict为0,认为是_short_contig_path_ 产生一个空文件
     if not seed_list:
         with open(_short_contig_path_, 'w'):
             pass
-        print("The ref file of {} gene does not have enough sequences".ljust(50))
+        print("The ref file of {} gene does not have enough sequences".format(gene_name))
         return assemble_gene_info_dict
 
     # 选取出现次数最多的_kmer_作为起始种子
+    # unique_kmer_number 计算不同的kmer的数量
+    # used_kmer_count 使用的kmer的出现次数的总和
     _cur_seed_info_ = seed_list[0]
-    contig, _, _, _, _, used_kmer_count = \
+    contig, _, _, _, unique_kmer_number, used_kmer_count = \
         assemble_read_for_contig(_read_kmer_dict_, _cur_seed_info_[0], _iteration_)
+
     # 记录当前拼接出来最长的contig
     best_contig = contig
     best_kmer_count = used_kmer_count
+    best_unique_kmer_number = unique_kmer_number
     best_seed_seq = _cur_seed_info_[0]
 
     short_contig_length = 0
@@ -356,14 +353,15 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             # 记录seed信息
             last_seed_info = new_seed_info
             # print("The contig length is {} and is shorter than avg_len. Use another seed to re-assemble."
-            #       .format(len(contig)).ljust(50))
+            #       .format(len(contig)))
             # 产生的新的contig
-            contig, _, _, _, _, used_kmer_count = \
+            contig, _, _, _, unique_kmer_number, used_kmer_count = \
                 assemble_read_for_contig(_read_kmer_dict_, new_seed_info[0], _iteration_)
             change_count += 1
             # 如果新的contig的长度比之前存储的best_contig长,则更改记录的信息
             if len(contig) > len(best_contig):
-                best_contig, best_seed_seq, best_kmer_count = contig, new_seed_info[0], used_kmer_count
+                best_contig, best_seed_seq, best_unique_kmer_number, best_kmer_count = \
+                    contig, new_seed_info[0], unique_kmer_number, used_kmer_count
             if len(best_contig) / gene_avg_len >= _min_percent_length_ or change_count >= int(_change_seed_):
                 break
 
@@ -387,17 +385,17 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
                 if _read_kmer_dict_[x][1] == 0:
                     del _read_kmer_dict_[x]
             del _filter_
-            contig, _, _, _, _, used_kmer_count \
+            contig, _, _, _, unique_kmer_number, used_kmer_count \
                 = assemble_read_for_contig(_read_kmer_dict_, _cur_seed_info_[0])
             if _max_percent_length_ >= len(contig) / gene_avg_len >= _min_percent_length_:
-                best_contig, best_kmer_count = contig, used_kmer_count
+                best_contig, best_unique_kmer_number, best_kmer_count = contig, unique_kmer_number, used_kmer_count
                 break
             # 当增大_kmer_limit_count_后,若是序列低于标准,则选用当前的best_contig
             elif len(contig) / gene_avg_len < _min_percent_length_:
                 break
             # 当增大_kmer_limit_count_后,序列仍较长时,则更换当前最优contig
             else:
-                best_contig, best_kmer_count = contig, used_kmer_count
+                best_contig, best_unique_kmer_number, best_kmer_count = contig, unique_kmer_number, used_kmer_count
         contig_length = len(best_contig)
     # 序列长度合理,则直接选用当前的best_contig
     else:
@@ -407,21 +405,21 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
 
     if is_normal_contig:
         print("Assemble {} gene succeed. Ref length: {}, best contig length: {}.".format
-              (gene_name, gene_avg_len, len(best_contig)).ljust(50))
+              (gene_name, gene_avg_len, len(best_contig)))
         with open(_contig_path_, 'w') as out:
             out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_contig_k' + str(_assemble_kmer_size_) +
                       "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     else:
         print("Assemble {} gene failed. Ref length: {}, best contig length: {}.".format
-              (gene_name, gene_avg_len, len(best_contig)).ljust(50))
+              (gene_name, gene_avg_len, len(best_contig)))
         with open(_short_contig_path_, 'w') as out:
             out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_short_contig_k' +
                       str(_assemble_kmer_size_) + "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     # 写入scaffold
     if _generate_scaffold_:
-        print("Generate scaffold for {} gene.".format(gene_name).ljust(50))
+        print("Generate scaffold for {} gene.".format(gene_name))
         seed_list.insert(0, _cur_seed_info_)
         scaffold = get_scaffold(_read_kmer_dict_, seed_list, _kmer_limit_count_, gene_avg_len, iteration=_iteration_)
         with open(os.path.join(_out_dir_, 'scaffolds', gene_name + ".scaffold.fasta"), 'w') as out:
@@ -431,19 +429,23 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             out.write(scaffold + '\n')
         if scaffold_length / gene_avg_len > _min_percent_length_:
             print("Generate scaffold for {} gene succeed. Ref length: {}, scaffold length:{}"
-                  .format(gene_name, gene_avg_len, scaffold_length).ljust(50))
+                  .format(gene_name, gene_avg_len, scaffold_length))
         else:
             print("Generate scaffold for {} gene failed. Ref length: {}, scaffold length:{}"
-                  .format(gene_name, gene_avg_len, scaffold_length).ljust(50))
+                  .format(gene_name, gene_avg_len, scaffold_length))
+
+    # 使用used_kmer_count*kmer_size / unique_kmer_count 计算contig的覆盖率
+    # 覆盖深度
+    contig_coverage_depth = round(best_kmer_count * _assemble_kmer_size_ / best_unique_kmer_number, 2)
+
     gene_info["assemble_success_flag"] = assemble_success_flag
     gene_info["contig_length"] = contig_length
     gene_info["short_contig_length"] = short_contig_length
     gene_info["scaffold_length"] = scaffold_length
     gene_info["filter_reads_count"] = filter_reads_count
-    gene_info["kmer_count"] = kmer_count
-    gene_info["used_kmer_count"] = best_kmer_count
+    gene_info["kmer_usage_rate"] = round(best_kmer_count / read_kmer_count_sum, 2)
     gene_info["seed"] = best_seed_seq
-    gene_info["kmer_coverage_depth"] = kmer_coverage_depth
+    gene_info["contig_coverage_depth"] = contig_coverage_depth
     assemble_gene_info_dict[gene_name] = gene_info
     return assemble_gene_info_dict
 
@@ -474,9 +476,9 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
                   _max_percent_length_: float = 2.0, _iteration_: int = 1000, _write_scaffold_: bool = True):
     # 设定assemble contig的输出文件夹
     assemble_init(_out_dir_)
-    print('Assemble reads'.center(50))
+    print('Assemble reads')
     file_dict = collections.defaultdict(dict)
-    for ref_file_path in util.get_file_list(_ref_path_):
+    for ref_file_path in get_file_list(_ref_path_):
         gene_name = os.path.basename(ref_file_path).split(".")[0]
         file_dict[gene_name]["ref_file"] = ref_file_path
         if os.path.isdir(_input_read_path_) and os.path.isfile(os.path.join(_input_read_path_, gene_name + ".fasta")):
@@ -487,29 +489,38 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
             file_dict[gene_name]["reads_file"] = None
     # 用于存储基因是否过滤成功的信息
     assemble_gene_info_dict = collections.defaultdict(dict)
-    pool = multiprocessing.Pool(min(_assemble_thread_, len(file_dict)))
-    for gene_name, file_info in file_dict.items():
-        if file_info["reads_file"] is None:
-            continue
-        pool.apply_async(func=assemble_one_file,
-                         args=(file_info["reads_file"], _out_dir_, file_info["ref_file"], _assemble_kmer_size_,
-                               _ref_reverse_complement_, _pos_, _change_seed_, _kmer_limit_count_,
-                               _min_percent_length_, _max_percent_length_, _iteration_, _write_scaffold_,),
-                         callback=assemble_gene_info_dict.update)
-    pool.close()
-    pool.join()
+    if _assemble_thread_ > 1:
+        pool = multiprocessing.Pool(min(_assemble_thread_, len(file_dict)))
+        for gene_name, file_info in file_dict.items():
+            if file_info["reads_file"] is None:
+                continue
+            pool.apply_async(func=assemble_one_file,
+                             args=(file_info["reads_file"], _out_dir_, file_info["ref_file"], _assemble_kmer_size_,
+                                   _ref_reverse_complement_, _pos_, _change_seed_, _kmer_limit_count_,
+                                   _min_percent_length_, _max_percent_length_, _iteration_, _write_scaffold_,),
+                             callback=assemble_gene_info_dict.update)
+        pool.close()
+        pool.join()
+    else:
+        for gene_name, file_info in file_dict.items():
+            if file_info["reads_file"] is None:
+                continue
+            assemble_gene_info_dict.update(
+                assemble_one_file(file_info["reads_file"], _out_dir_, file_info["ref_file"], _assemble_kmer_size_,
+                                  _ref_reverse_complement_, _pos_, _change_seed_, _kmer_limit_count_,
+                                  _min_percent_length_, _max_percent_length_, _iteration_, _write_scaffold_, ))
     assemble_flag_list = [i["assemble_success_flag"] for i in assemble_gene_info_dict.values()]
-    print("Assemble Done! {} / {} succeed".format(assemble_flag_list.count(True), len(assemble_flag_list)).center(50))
+    print("Assemble Done! {} / {} succeed".format(assemble_flag_list.count(True), len(assemble_flag_list)))
     # 输出log信息
     log_file = os.path.join(_out_dir_, "assemble_log.csv")
-    util.log(log_file, "gene_id", "contig_length", "short_contig_length", "scaffold_length", "kmer_coverage_depth",
-             "assemble_kmer", "assemble_seed", "kmer_limit", "filter_reads_count",
-             "used_kmer_count", "kmer_count")
+    log(log_file, "gene_id", "contig_length", "short_contig_length", "scaffold_length", "kmer_coverage_depth",
+        "assemble_kmer", "assemble_seed", "kmer_limit", "filter_reads_count",
+        "kmer_usage_rate")
     for gene_name, gene_info in assemble_gene_info_dict.items():
-        util.log(log_file, gene_name, gene_info["contig_length"], gene_info["short_contig_length"],
-                 gene_info["scaffold_length"], gene_info["kmer_coverage_depth"], gene_info["assemble_kmer_size"],
-                 gene_info["seed"], gene_info["kmer_limit"], gene_info["filter_reads_count"],
-                 gene_info["used_kmer_count"], gene_info["kmer_count"])
+        log(log_file, gene_name, gene_info["contig_length"], gene_info["short_contig_length"],
+            gene_info["scaffold_length"], gene_info["kmer_coverage_depth"], gene_info["assemble_kmer_size"],
+            gene_info["seed"], gene_info["kmer_limit"], gene_info["filter_reads_count"],
+            gene_info["kmer_usage_rate"])
     return assemble_gene_info_dict
 
 
@@ -548,11 +559,3 @@ if __name__ == "__main__":
                   _change_seed_=args.change_seed, _kmer_limit_count_=args.kmer_limit,
                   _min_percent_length_=args.minimum_length_ratio, _max_percent_length_=args.maximum_length_ratio,
                   _iteration_=1000, _write_scaffold_=args.generate_scaffold)
-
-    # python assemble.py -i /Users/zzhen/Desktop/result -o /Users/zzhen/Desktop/result -r /Users/zzhen/Desktop/ref -k 41 -s 1 -t 1
-    # print(assemble_one_file("/Users/zzhen/Desktop/result/5918.fasta", "/Users/zzhen/Desktop/result",
-    #                         "/Users/zzhen/Desktop/ref/5918.fasta", 41, True, True, 32, 2, 1.0, 2.0, 1000, False))
-    # -i /Users/zzhen/Desktop/result -o /Users/zzhen/Desktop/result -r /Users/zzhen/Desktop/ref -k 41 -s 1 -t 1
-    # print(assemble_one_file("/Users/zzhen/Desktop/result/5940.fasta", "/Users/zzhen/Desktop/result",
-    #                         "/Users/zzhen/Desktop/ref/5940.fasta", 41, True, True, 32, 2, 1.0, 2.0, 1000, False))
-

@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 # @Time       : 2022/3/18 3:44 下午
 # @Author     : zzhen
-# @File       : main.py.py
+# @File       : easy353.py.py
 # @Software   : PyCharm
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import argparse
-import filter
-import assemble
+from src import assemble, filter
 
 
 # 参数初始化
@@ -21,7 +20,7 @@ def args_init():
                       help="Input file(s) with reverse paired-end reads (*.fq/.gz/.tar.gz).", required=False)
     pars.add_argument("-u", dest="unpaired_fq_file", type=str,
                       help="Input file(s) with unpaired (single-end) reads.", required=False, nargs="+")
-    pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references", required=True)
+    pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references.", required=True)
     pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", required=False,
                       default="easy353_output")
     pars.add_argument("-k1", dest="filter_kmer", type=int, help="Kmer setting for filtering reads. Default:31",
@@ -34,7 +33,7 @@ def args_init():
                       help="Threads setting for filtering reads. Default:4", default=4)
     pars.add_argument("-t2", dest="assemble_thread", type=int,
                       help="Threads setting for assembling reads. Default:4", default=4)
-    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:3", default=2)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:2", default=2)
     pars.add_argument("-f", dest="function_mode", type=int, help="0:all,1:filter,2:assemble. Default:0", default=0)
     pars.add_argument("-min", dest="minimum_length_ratio", type=float,
                       help="The minimum ratio of contig length to reference average length. Default:1.0", default=1.0)
@@ -54,8 +53,7 @@ def args_init():
 
 if __name__ == "__main__":
     args = args_init()
-    print(args)
-
+    # python easy353.py -1 /Users/zzhen/Desktop/ara.1.fq -2 /Users/zzhen/Desktop/ara.2.fq -r /Users/zzhen/Desktop/new -o /Users/zzhen/Desktop/test_a -k1 31 -k2 41 -s 1 -t1 1 -t2 1
     fastq_files = tuple()
     _paired_reads_ = False
     if args.unpaired_fq_file:

@@ -14,18 +14,14 @@ import os
 import csv
 import multiprocessing
 from Bio import SeqIO
-from execution_time import ExecutionTime
 import re
 import argparse
 
-e = ExecutionTime(console=True)
-
 
 # Generate the downloaded data table
-# para: {str:list[str]} eg. {"Family": ["科1", "科2"]}
+# para: {str:list[str]} eg. {"Family": ["family1", "family2"]}
 # 根据传入参数，产生需要下载的数据表
-@e.timeit
-def generate_data_csv(parameter: Dict, database: str = "resource/specimens.csv", data_dir: str = "data",
+def generate_data_csv(parameter: Dict, database: str = "src/specimens.csv", data_dir: str = "data",
                       out_csv: str = "download.csv") -> None:
     with open(database, "r", newline="") as _in_file_:
         with open(os.path.join(data_dir, out_csv), "w", newline="") as _out_file_:
@@ -42,7 +38,6 @@ def generate_data_csv(parameter: Dict, database: str = "resource/specimens.csv",
 
 
 # 根据传入的文件夹获取所有fasta文件的路径
-@e.timeit
 def generate_fasta_path(_dir_path_: str) -> list:
     # 存储所有的文件路径
     file_path_list = []
@@ -58,7 +53,6 @@ def generate_fasta_path(_dir_path_: str) -> list:
     return file_path_list
 
 
-@e.timeit
 # 用于根据不同物种的fasta文件，合并生成不同基因的fasta文件
 def generate_gene_file(_dir_path_: str, _output_dir_: str, exclude_species: list = None) -> None:
     # 生成fasta文件的路径
@@ -88,7 +82,7 @@ def generate_gene_file(_dir_path_: str, _output_dir_: str, exclude_species: list
 # 一般需要实例化数据csv文件和输出文件夹
 class DataTool:
     # database指的是treeoflife.kew.org的数据库
-    def __init__(self, data_csv: str = "resource/specimens.csv", out_dir: str = "data"):
+    def __init__(self, data_csv: str = "src/specimens.csv", out_dir: str = "data"):
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir)
         self.data_csv = data_csv
@@ -119,14 +113,13 @@ class DataTool:
         return
 
     # Download the data in the download_csv
-    @e.timeit
     def download_data(self, storage_by_classification: bool = False, _thread_: int = 4) -> None:
         with open(self.data_csv, "r", newline="") as _in_file_:
             _reader_ = csv.DictReader(_in_file_)
             if _thread_ > 1:
                 pool = multiprocessing.Pool(_thread_)
                 for row in _reader_:
-                    pool.apply_async(self.get_fasta_file, args=(row, storage_by_classification,))
+                    (self.get_fasta_file, args=(row, storage_by_classification,))
                 pool.close()
                 pool.join()
             else:
@@ -168,11 +161,11 @@ if __name__ == '__main__':
         download_csv = os.path.join(args.o, "download.csv")
     data_tools = DataTool(download_csv, args.o)
     data_tools.download_data(args.s, args.t)
-    generate_gene_file(args.o+"/fasta_file", args.o+"/gene_file", args.exclude)
+    generate_gene_file(args.o + "/fasta_file", args.o + "/gene_file", args.exclude)
 
-    # python download_file.py -csv resource/specimens.csv -o ~/Desktop/test -family sapindaceae -t 4 -generate
+    # python download_file.py -csv src/specimens.csv -o ~/Desktop/test -family sapindaceae -t 4 -generate
     # para = {"Family": ["Sapindaceae"]}
-    # generate_data_csv(para, "resource/specimens.csv", "/Users/zzhen/Desktop/test")
+    # generate_data_csv(para, "src/specimens.csv", "/Users/zzhen/Desktop/test")
     # data_tool = DataTool("/Users/zzhen/Desktop/test/download.csv", "/Users/zzhen/Desktop/test")
     # data_tool.download_data(storage_by_classification=True, _thread_=4)
     # generate_gene_file("/Users/zzhen/Desktop/test/fasta_file/", "/Users/zzhen/Desktop/test/gene_file/")

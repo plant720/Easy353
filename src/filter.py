@@ -14,9 +14,12 @@ import shutil
 import sys
 import time
 import psutil
-import util
 import gc
 import argparse
+
+# import my python file
+from src.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, total_size, \
+    get_reads_info,log
 
 
 # 根据read_seq判断该read产生的kmer包含在哪些参考文件中,返回文件名/基因名 即os.path.basename(file_path).split('.')[0]
@@ -32,7 +35,7 @@ def filter_read_for_gene(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
             # 将该kmer存在的参考文件添加到tmplist
             ref_gene_name_list.extend(_ref_kmer_dict_.get(read_kmer)[2:])
     if _read_reverse_complement_:
-        _read_seq_ = util.reverse_complement_limit(_read_seq_)
+        _read_seq_ = reverse_complement_limit(_read_seq_)
         for j in range(0, len(_read_seq_) - _kmer_size_, _step_size_):
             read_kmer = _read_seq_[j:j + _kmer_size_]
             if read_kmer in _ref_kmer_dict_:
@@ -44,7 +47,7 @@ def filter_read_for_gene(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
 # _step_size_ the length of the sliding window on the reads
 # 如果建立_ref_hash_dict_时,对参考序列进行了反向互补，则在过滤read时不需要;反之同理
 def do_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, _file_path_: str, _out_dir_: str,
-                    _read_reverse_complement_) -> None:
+                    _read_reverse_complement_, _print_=True) -> None:
     _time_start_, _time_end_, reads_count = time.time(), 0, 0
     # 判断文件是否是gz文件
     bytes_type = _file_path_[-3:].lower() == ".gz"
@@ -53,15 +56,16 @@ def do_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, _
         reads_count += 1
         temp_rec = [_, infile_stream.readline(), infile_stream.readline(), infile_stream.readline()]
         for file_name in filter_read_for_gene(_ref_kmer_dict_, _kmer_size_, _step_size_,
-                                              util.bytes_str(temp_rec[1]),
+                                              bytes_str(temp_rec[1]),
                                               _read_reverse_complement_):
             with open(os.path.join(_out_dir_, file_name + ".fasta"), "a+") as outfile:
-                outfile.writelines(['>', util.bytes_str(temp_rec[0]), util.bytes_str(temp_rec[1])])
+                outfile.writelines(['>', bytes_str(temp_rec[0]), bytes_str(temp_rec[1])])
         if reads_count % 1000000 == 0:
             _time_end_ = time.time()
             _time_start_, _time_end_ = _time_end_, _time_end_ - _time_start_
-            print('handled\t', reads_count // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads', sep="",
-                  end='\r')
+            if _print_:
+                print('handled\t', reads_count // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads', sep="",
+                      end='\r')
     infile_stream.close()
 
 
@@ -70,7 +74,7 @@ def do_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, _
 # t_id and t_count 适用于处理多进程读文件
 def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, fq_file_1: str,
                          fq_file_2: str, _out_dir_: str, t_id: int, t_count: int,
-                         _read_reverse_complement_) -> None:
+                         _read_reverse_complement_, _print_=True) -> None:
     _time_start_, _time_end_, reads_count = time.time(), 0, 0
     bytes_type = fq_file_1[-3:].lower() == ".gz"
     if fq_file_1 == fq_file_2:
@@ -85,16 +89,17 @@ def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
         if reads_count % t_count == t_id:
             # 对于该kmer存在的所有参考文件 进行文件写入
             for file_name in filter_read_for_gene(_ref_kmer_dict_, _kmer_size_, _step_size_,
-                                                  util.bytes_str(temp_rec1[1]),
+                                                  bytes_str(temp_rec1[1]),
                                                   _read_reverse_complement_):
                 with open(os.path.join(_out_dir_, file_name + ".fasta"), "a+") as _out_file:
-                    _out_file.writelines(['>', util.bytes_str(temp_rec1[0]), util.bytes_str(temp_rec1[1])])
-                    _out_file.writelines(['>', util.bytes_str(temp_rec2[0]), util.bytes_str(temp_rec2[1])])
+                    _out_file.writelines(['>', bytes_str(temp_rec1[0]), bytes_str(temp_rec1[1])])
+                    _out_file.writelines(['>', bytes_str(temp_rec2[0]), bytes_str(temp_rec2[1])])
         if reads_count * 2 % 1000000 == 0:
             _time_end_ = time.time()
             _time_start_, _time_end_ = _time_end_, _time_end_ - _time_start_
-            print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
-                  sep="", end='\r')
+            if _print_:
+                print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
+                      sep="", end='\r')
     infile_1.close()
     infile_2.close()
 
@@ -116,7 +121,7 @@ def re_filter_reads(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, g
                 break
         # 当该条序列没有过滤成功并且需要处理read反向互补的情况时
         if not filtered_flag and _read_reverse_complement_:
-            temp_seq = util.reverse_complement_limit(read_seq)
+            temp_seq = reverse_complement_limit(read_seq)
             # 因为有一个换行符 所以不需要-1
             for j in range(0, len(temp_seq) - _kmer_size_, _step_size_):
                 kmer = temp_seq[j:j + _kmer_size_]
@@ -140,8 +145,8 @@ def refilter_one_gene(gene_name: str, gene_avg_len: int, _refilter_kmer_size_: i
     while True:
         print("re-filter:", gene_name, 'with k =', _refilter_kmer_size_)
         # 对参考序列进行reverse_complement 则不对read进行反向互补
-        ref_kmer_dict = util.make_ref_kmer_dict(_reference_path_, _refilter_kmer_size_, _ref_reverse_complete_=True,
-                                                _print_=False)
+        ref_kmer_dict = make_ref_kmer_dict(_reference_path_, _refilter_kmer_size_, _ref_reverse_complement_=True,
+                                           _print_=False)
         filter_reads_count, filter_reads_length = re_filter_reads(ref_kmer_dict, _refilter_kmer_size_,
                                                                   _refilter_step_size_, gene_name,
                                                                   _out_dir_, _read_reverse_complement_=False)
@@ -150,7 +155,7 @@ def refilter_one_gene(gene_name: str, gene_avg_len: int, _refilter_kmer_size_: i
         _refilter_gene_info_dict_[gene_name]["filter_reads_length"] = filter_reads_length
         _refilter_gene_info_dict_[gene_name]["filter_kmer"] = _refilter_kmer_size_
 
-        if filter_reads_length / gene_avg_len < 512 or util.get_file_size(
+        if filter_reads_length / gene_avg_len < 512 or get_file_size(
                 os.path.join(_out_dir_, gene_name + ".fasta")) < 8 or _refilter_kmer_size_ >= 75:
             break
         else:
@@ -168,11 +173,11 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
                 _step_size_: int = 1, _ref_reverse_complement_: bool = False,
                 _read_reverse_complement_: bool = False, refilter: bool = True,
                 _clear_: bool = True, _pos_: bool = True,
-                _paired_reads_: bool = True, _thread_for_filter_: int = 4):
+                _paired_reads_: bool = True, _thread_for_filter_: int = 4, _print_: bool = True):
     # 初始化操作
     if not os.path.isdir(_out_dir_):
         os.makedirs(_out_dir_)
-    print("Getting information from references".center(50))
+    print("Getting information from references")
     # 当参考序列不进行反向互补时，read进反向互补
     if not _ref_reverse_complement_:
         _read_reverse_complement_ = True
@@ -180,17 +185,17 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
     _time_build_hash_start_ = time.time()
     # ref_length_dict 记录reference文件的read平均长度
     # ref_path_dict 记录reference文件的路径信息
-    ref_length_dict, ref_path_dict = util.get_ref_info(_reference_path_)
+    ref_length_dict, ref_path_dict = get_ref_info(_reference_path_)
     # 构建哈西字典
-    print("Building hash table".center(50))
+    print("Building hash table")
 
     # 处理reference 并生成具体kmer存储在ref_kmer_dict
     # 用于记录记录所有的reference信息  字典的key是kmer seq value是一个list,
     # list[0] 是kmer出现次数
     # list[1] 是kmer出现在某条参考基因上的百分比位置之和
     # list[2:]是该kmer在哪些文件(基因)中出现
-    ref_kmer_dict = util.make_ref_kmer_dict(_reference_path_, _kmer_size_, _ref_reverse_complement_, _pos_)
-    print("Hash dictionary has been made".center(50))
+    ref_kmer_dict = make_ref_kmer_dict(_reference_path_, _kmer_size_, _ref_reverse_complement_, _pos_, _print_)
+    print("Hash dictionary has been made")
     _time_build_hash_end = time.time()
     print('Time used for building hash table: {} s'.format(round(_time_build_hash_end - _time_build_hash_start_, 2)))
 
@@ -206,18 +211,18 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
     if not _paired_reads_:
         _unpaired_file_list_ = _read_data_tuple_[0]
         # 当建立的hash表的内存超过系统内存一半时，使用单线程进行过滤
-        if _thread_for_filter_ == 1 or sys.getsizeof(ref_kmer_dict) / 300 / 500 / 1024 * _thread_for_filter_ > \
+        if _thread_for_filter_ == 1 or total_size(ref_kmer_dict) / 1024 / 1024 / 1024 * _thread_for_filter_ > \
                 psutil.virtual_memory().total / 1024 / 1024 / 1024 * 0.5:
             for unpaired_file in _unpaired_file_list_:
                 do_reads_filter(ref_kmer_dict, _kmer_size_, _step_size_, unpaired_file,
-                                _out_dir_, _read_reverse_complement_)
+                                _out_dir_, _read_reverse_complement_, _print_)
         else:
             # 创建进程池
             pool = multiprocessing.Pool(min(len(_unpaired_file_list_), _thread_for_filter_))
             # 创建进程池中的进程
             for unpaired_file in _unpaired_file_list_:
                 pool.apply_async(do_reads_filter, args=(ref_kmer_dict, _kmer_size_, _step_size_, unpaired_file,
-                                                        _out_dir_, _read_reverse_complement_), )
+                                                        _out_dir_, _read_reverse_complement_, _print_), )
             pool.close()
             pool.join()
     # 当测序数据是paired-end时
@@ -227,12 +232,12 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         if len(paired_file_list_one) == len(paired_file_list_two):
             for i in range(len(paired_file_list_one)):
                 # 处理根据内存占比，选用多进程或是单进程
-                if _thread_for_filter_ == 1 or sys.getsizeof(ref_kmer_dict) / 300 / 500 / 1024 * _thread_for_filter_ > \
+                if _thread_for_filter_ == 1 or total_size(ref_kmer_dict) / 1024 / 1024 / 1024 * _thread_for_filter_ > \
                         psutil.virtual_memory().total / 1024 / 1024 / 1024 * 0.5:
                     # 当设定为单线程或
                     do_pair_reads_filter(ref_kmer_dict, _kmer_size_, _step_size_,
                                          paired_file_list_one[i], paired_file_list_two[i],
-                                         _out_dir_, 0, 1, _read_reverse_complement_)
+                                         _out_dir_, 0, 1, _read_reverse_complement_, _print_)
                 else:
                     # 创建进程池
                     pool = multiprocessing.Pool(_thread_for_filter_)
@@ -242,11 +247,11 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
                         pool.apply_async(func=do_pair_reads_filter,
                                          args=(ref_kmer_dict, _kmer_size_, _step_size_,
                                                paired_file_list_one[i], paired_file_list_two[i],
-                                               _out_dir_, j, _thread_for_filter_, _read_reverse_complement_,))
+                                               _out_dir_, j, _thread_for_filter_, _read_reverse_complement_, _print_,))
                     pool.close()
                     pool.join()
         else:
-            print("The number of paired_end fastq files is not equal".center(50))
+            print("The number of paired_end fastq files is not equal")
             exit(0)
     _time_filter_end_ = time.time()
     print('Time used for filter: {} s'.format(round(_time_filter_end_ - _time_filter_start_, 2)))
@@ -260,7 +265,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         filter_gene_info_dict[gene_name]["ref_avg_length"] = ref_avg_length
         filter_gene_info_dict[gene_name]["filter_kmer"] = _kmer_size_
         filter_gene_info_dict[gene_name]["filter_reads_count"], filter_gene_info_dict[gene_name][
-            "filter_reads_length"] = util.get_reads_info(os.path.join(_out_dir_, gene_name + ".fasta"))
+            "filter_reads_length"] = get_reads_info(os.path.join(_out_dir_, gene_name + ".fasta"))
 
     # 当需要re-filter时
     if refilter:
@@ -274,7 +279,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
                 # 如果覆盖深度>512x 或过滤后的文件>8m
                 # 该处覆盖深度采用简单的 c = LN / G
                 if (gene_info["filter_reads_length"] / gene_info.get("ref_avg_length") > 512) \
-                        and util.get_file_size(os.path.join(_out_dir_, gene_name + ".fasta")) > 8:
+                        and get_file_size(os.path.join(_out_dir_, gene_name + ".fasta")) > 8:
                     # 将需要过滤的文件移动到一个文件夹中
                     shutil.move(os.path.join(_out_dir_, gene_name + ".fasta"),
                                 os.path.join(_out_dir_, 'big_reads', gene_name + ".fasta"))
@@ -282,9 +287,9 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         # 再次清理内存
         gc.collect()
         if not refilter_gene_info_dict:
-            print("Big reads files don't exist, no need to reFilter!".center(50))
+            print("Big reads files don't exist, no need to reFilter!")
         else:
-            print("reFilter".center(50))
+            print("reFilter")
             #  当需要进行重新过滤时,一般单个文件较小,可以考虑使用多进程处理重过滤
             # py3.8 对于 macOS,默认启动方式是spawn,m1上会出错
             # if sys.platform in ['darwin']:
@@ -303,10 +308,10 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         # 输出log信息
         filter_gene_info_dict.update(refilter_gene_info_dict)
         log_file = os.path.join(_out_dir_, "filter_log.csv")
-        util.log(log_file, "gene_id", "ref_avg_length", "filter_reads_count", "filter_kmer")
+        log(log_file, "gene_id", "ref_avg_length", "filter_reads_count", "filter_kmer")
         for gene_name, gene_info in filter_gene_info_dict.items():
-            util.log(log_file, gene_name, gene_info["ref_avg_length"], gene_info["filter_reads_count"],
-                     gene_info["filter_kmer"])
+            log(log_file, gene_name, gene_info["ref_avg_length"], gene_info["filter_reads_count"],
+                      gene_info["filter_kmer"])
         # 返回过滤后的基因信息
         return filter_gene_info_dict
 
