@@ -259,7 +259,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     gene_info = {"assemble_success_flag": assemble_success_flag, "contig_length": 0, "short_contig_length": 0,
                  "scaffold_length": 0, "filter_reads_count": 0, "kmer_usage_rate": 0,
                  "seed": "", "assemble_kmer_size": _assemble_kmer_size_,
-                 "kmer_limit": _kmer_limit_count_, "kmer_coverage_depth": 0}
+                 "kmer_limit": _kmer_limit_count_, "contig_coverage_depth": 0}
     # read 产生的Kmer总数和不同种类Kmer的数量
     # ref_seq 产生的Kmer总数和不同种类Kmer的数量
     assemble_gene_info_dict[gene_name] = gene_info
@@ -289,7 +289,6 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
         # kmer_dict中出现次数小于limit 且 在参考序列中没有出现 的kmer删除
         _filter_ = [_kmer_ for _kmer_ in _read_kmer_dict_ if _read_kmer_dict_[_kmer_][0] <= _kmer_limit_count_]
         for _kmer_ in _filter_:
-            # del _read_kmer_dict_[_kmer_]
             if _read_kmer_dict_[_kmer_][1] == 0:
                 del _read_kmer_dict_[_kmer_]
         # 用于清理内存
@@ -310,7 +309,8 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
 
     seed_list = [(x, _ref_kmer_dict_[x][0] / get_median(ref_kmer_count) * _read_kmer_dict_[x][0]
                   / get_median(read_kmer_count), _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in shared_seed]
-    read_kmer_count_sum = sum(read_kmer_count)
+    # 计算删除出现次数较少的kmer后剩余的Kmer总数
+    read_kmer_count_sum = sum(_read_kmer_dict_[i][0] for i in _read_kmer_dict_)
     del shared_seed, ref_kmer_count, read_kmer_count
 
     # 根据kmer权重进行排序
@@ -513,12 +513,12 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
     print("Assemble Done! {} / {} succeed".format(assemble_flag_list.count(True), len(assemble_flag_list)))
     # 输出log信息
     log_file = os.path.join(_out_dir_, "assemble_log.csv")
-    log(log_file, "gene_id", "contig_length", "short_contig_length", "scaffold_length", "kmer_coverage_depth",
+    log(log_file, "gene_id", "contig_length", "short_contig_length", "scaffold_length", "contig_coverage_depth",
         "assemble_kmer", "assemble_seed", "kmer_limit", "filter_reads_count",
         "kmer_usage_rate")
     for gene_name, gene_info in assemble_gene_info_dict.items():
         log(log_file, gene_name, gene_info["contig_length"], gene_info["short_contig_length"],
-            gene_info["scaffold_length"], gene_info["kmer_coverage_depth"], gene_info["assemble_kmer_size"],
+            gene_info["scaffold_length"], gene_info["contig_coverage_depth"], gene_info["assemble_kmer_size"],
             gene_info["seed"], gene_info["kmer_limit"], gene_info["filter_reads_count"],
             gene_info["kmer_usage_rate"])
     return assemble_gene_info_dict
@@ -559,3 +559,6 @@ if __name__ == "__main__":
                   _change_seed_=args.change_seed, _kmer_limit_count_=args.kmer_limit,
                   _min_percent_length_=args.minimum_length_ratio, _max_percent_length_=args.maximum_length_ratio,
                   _iteration_=1000, _write_scaffold_=args.generate_scaffold)
+    # assemble_one_file("/Users/zzhen/Desktop/test/7367.fasta", "/Users/zzhen/Desktop/debug"
+    #                   , "/Users/zzhen/Desktop/new/353gene/7367.fasta",
+    #                   41, True, True, 32, 2, 1.0, 2.0, 1000, False)
