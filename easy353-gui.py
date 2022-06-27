@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time       : 2022/4/6 2:50 下午
 # @Author     : zzhen
-# @File       : interface.py
+# @File       : easy353-gui.py
 # @Software   : PyCharm
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.

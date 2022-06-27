@@ -10,9 +10,6 @@
 import requests
 from bs4 import BeautifulSoup
 import collections
-import csv
-import json
-
 # kew fasta文件存储位置
 URL = "http://sftp.kew.org/pub/paftol/current_release/fasta/by_recovery/"
 

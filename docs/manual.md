@@ -54,7 +54,7 @@ GGAAGACATAGGTGGGTTGAATATGCAGAAAAAGGTCGCTACAACGCCTCCCAGGTGCCAGCAGAATGGCATGGTTGGCT
 
 * `main.py`:软件运行的主程序。通过`python main.py -h`可以查看程序的参数
 
-  ![image-20220522171614490](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220522171614.png)
+  ![image-20220522171614490](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220627154911.png)
 
 * `filter.py`:用于从测序数据过滤与目标基因相关的reads
 

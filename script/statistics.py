@@ -4,7 +4,7 @@
 # @Author     : zzhen
 # @File       : statistics.py
 # @Software   : PyCharm
-# @Description: 
+# @Description: Statistics on the results of different species
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 
 import os
@@ -66,7 +66,7 @@ def statistics_gene(dir_list: list, _scaffold_: bool) -> dict:
 
 
 if __name__ == '__main__':
-    pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description='''MinerScript 
+    pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description='''Easy353Script 
         zzhen@sculab ''')
     # 允许传入多个文件夹
     pars.add_argument('-f', metavar='<str>', type=str, help='''the directory of results''', required=True,

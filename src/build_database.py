@@ -34,7 +34,8 @@ def network_connect() -> bool:
 # return {"Family1":"Family","Genus1":"Genus"}
 def parse_classification_json() -> dict:
     _classification_ = defaultdict(str)
-    with open("classification.json", "r", encoding="UTF-8") as f:
+    classification_file_path = os.path.join(os.path.dirname(__file__), "classification.json")
+    with open(classification_file_path, "r", encoding="UTF-8") as f:
         _classification_dict_ = json.load(f)
     for key, value in _classification_dict_.items():
         for i in value:
@@ -63,7 +64,8 @@ def detect_classification(classifications: list) -> dict:
 # 根据传入的分类信息获取需要下载的文件路径
 def generate_download_info(classification_dict: dict) -> list:
     result_list = []
-    _reader_ = csv.DictReader(open("kew_data.csv", "r", newline=""))
+    kew_data_file_path = os.path.join(os.path.dirname(__file__), "kew_data.csv")
+    _reader_ = csv.DictReader(open(kew_data_file_path, "r", newline=""))
     # 将归属于目、科、属的数据存储在list中
     for key, value in classification_dict.items():
         # row 是存储下载信息的dict
