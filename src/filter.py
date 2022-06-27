@@ -11,15 +11,13 @@ import gzip
 import multiprocessing
 import os
 import shutil
-import sys
 import time
-import psutil
 import gc
 import argparse
 
 # import my python file
-from src.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, total_size, \
-    get_reads_info,log
+from src.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, \
+    get_reads_info, log
 
 
 # 根据read_seq判断该read产生的kmer包含在哪些参考文件中,返回文件名/基因名 即os.path.basename(file_path).split('.')[0]
@@ -74,7 +72,7 @@ def do_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, _
 # t_id and t_count 适用于处理多进程读文件
 def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: int, fq_file_1: str,
                          fq_file_2: str, _out_dir_: str, t_id: int, t_count: int,
-                         _read_reverse_complement_, _print_=True) -> None:
+                         _read_reverse_complement_: bool, _print_=True) -> None:
     _time_start_, _time_end_, reads_count = time.time(), 0, 0
     bytes_type = fq_file_1[-3:].lower() == ".gz"
     if fq_file_1 == fq_file_2:
@@ -101,8 +99,7 @@ def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
                 print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
                       sep="", end='\r')
             else:
-                print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
-                      sep="", end='\n')
+                print('handled {} m reads, {} s/m reads'.format(reads_count * 2 // 1000000, round(_time_end_, 2)))
     infile_1.close()
     infile_2.close()
 
@@ -214,8 +211,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
     if not _paired_reads_:
         _unpaired_file_list_ = _read_data_tuple_[0]
         # 当建立的hash表的内存超过系统内存一半时，使用单线程进行过滤
-        if _thread_for_filter_ == 1 or total_size(ref_kmer_dict) / 1024 / 1024 / 1024 * _thread_for_filter_ > \
-                psutil.virtual_memory().total / 1024 / 1024 / 1024 * 0.5:
+        if _thread_for_filter_ == 1:
             for unpaired_file in _unpaired_file_list_:
                 do_reads_filter(ref_kmer_dict, _kmer_size_, _step_size_, unpaired_file,
                                 _out_dir_, _read_reverse_complement_, _print_)
@@ -235,8 +231,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         if len(paired_file_list_one) == len(paired_file_list_two):
             for i in range(len(paired_file_list_one)):
                 # 处理根据内存占比，选用多进程或是单进程
-                if _thread_for_filter_ == 1 or total_size(ref_kmer_dict) / 1024 / 1024 / 1024 * _thread_for_filter_ > \
-                        psutil.virtual_memory().total / 1024 / 1024 / 1024 * 0.5:
+                if _thread_for_filter_ == 1:
                     # 当设定为单线程或
                     do_pair_reads_filter(ref_kmer_dict, _kmer_size_, _step_size_,
                                          paired_file_list_one[i], paired_file_list_two[i],
@@ -314,7 +309,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
         log(log_file, "gene_id", "ref_avg_length", "filter_reads_count", "filter_kmer")
         for gene_name, gene_info in filter_gene_info_dict.items():
             log(log_file, gene_name, gene_info["ref_avg_length"], gene_info["filter_reads_count"],
-                      gene_info["filter_kmer"])
+                gene_info["filter_kmer"])
         # 返回过滤后的基因信息
         return filter_gene_info_dict
 

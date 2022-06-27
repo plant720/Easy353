@@ -15,7 +15,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from urllib.error import HTTPError
 from urllib.request import urlretrieve
-from multiprocessing import Pool
+from multiprocessing.dummy import Pool
 from functools import partial
 from Bio import SeqIO
 

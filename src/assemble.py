@@ -242,7 +242,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
                       _assemble_kmer_size_: int, _ref_reverse_complement_: bool = True,
                       _pos_: bool = True, _change_seed_: int = 1000, _kmer_limit_count_: int = 2,
                       _min_percent_length_: float = 0.5, _max_percent_length_: float = 1.5,
-                      _iteration_: int = 1000, _generate_scaffold_: bool = True) -> dict:
+                      _iteration_: int = 1000, _generate_scaffold_: bool = True, _print_: bool = True) -> dict:
     assemble_gene_info_dict = collections.defaultdict(dict)
     # 设定输出文件名
     gene_name = os.path.basename(_ref_file_).split(".")[0]
@@ -263,7 +263,8 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     # read 产生的Kmer总数和不同种类Kmer的数量
     # ref_seq 产生的Kmer总数和不同种类Kmer的数量
     assemble_gene_info_dict[gene_name] = gene_info
-    print("Assembling the {} gene".format(gene_name))
+    if _print_:
+        print("Assembling the {} gene".format(gene_name))
     # 当read文件不存在时,返回False
     if not os.path.isfile(_reads_file_):
         print("Reads file of {} gene doesn't exist".format(gene_name))
@@ -404,22 +405,25 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
         assemble_success_flag = True
 
     if is_normal_contig:
-        print("Assemble {} gene succeed. Ref length: {}, best contig length: {}.".format
-              (gene_name, gene_avg_len, len(best_contig)))
+        if _print_:
+            print("Assemble {} gene succeed. Ref length: {}, best contig length: {}.".format
+                  (gene_name, gene_avg_len, len(best_contig)))
         with open(_contig_path_, 'w') as out:
             out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_contig_k' + str(_assemble_kmer_size_) +
                       "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     else:
-        print("Assemble {} gene failed. Ref length: {}, best contig length: {}.".format
-              (gene_name, gene_avg_len, len(best_contig)))
+        if _print_:
+            print("Assemble {} gene failed. Ref length: {}, best contig length: {}.".format
+                  (gene_name, gene_avg_len, len(best_contig)))
         with open(_short_contig_path_, 'w') as out:
             out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_short_contig_k' +
                       str(_assemble_kmer_size_) + "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     # 写入scaffold
     if _generate_scaffold_:
-        print("Generate scaffold for {} gene.".format(gene_name))
+        if _print_:
+            print("Generate scaffold for {} gene.".format(gene_name))
         seed_list.insert(0, _cur_seed_info_)
         scaffold = get_scaffold(_read_kmer_dict_, seed_list, _kmer_limit_count_, gene_avg_len, iteration=_iteration_)
         with open(os.path.join(_out_dir_, 'scaffolds', gene_name + ".scaffold.fasta"), 'w') as out:
@@ -427,12 +431,13 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             out.write('>' + os.path.split(_out_dir_)[-1] + "_" + '_scaffold_k' + str(_assemble_kmer_size_)
                       + "_" + str(scaffold_length) + '\n')
             out.write(scaffold + '\n')
-        if scaffold_length / gene_avg_len > _min_percent_length_:
-            print("Generate scaffold for {} gene succeed. Ref length: {}, scaffold length:{}"
-                  .format(gene_name, gene_avg_len, scaffold_length))
-        else:
-            print("Generate scaffold for {} gene failed. Ref length: {}, scaffold length:{}"
-                  .format(gene_name, gene_avg_len, scaffold_length))
+        if _print_:
+            if scaffold_length / gene_avg_len > _min_percent_length_:
+                print("Generate scaffold for {} gene succeed. Ref length: {}, scaffold length:{}"
+                      .format(gene_name, gene_avg_len, scaffold_length))
+            else:
+                print("Generate scaffold for {} gene failed. Ref length: {}, scaffold length:{}"
+                      .format(gene_name, gene_avg_len, scaffold_length))
 
     # 使用used_kmer_count*kmer_size / unique_kmer_count 计算contig的覆盖率
     # 覆盖深度

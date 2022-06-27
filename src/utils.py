@@ -6,13 +6,11 @@
 # @Software   : PyCharm
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
-from collections import defaultdict
-import sys
 import os
+import sys
 import glob
-from sys import getsizeof, stderr
-from itertools import chain
-from collections import deque
+import psutil
+from collections import defaultdict
 
 try:
     from reprlib import repr
@@ -20,44 +18,44 @@ except ImportError:
     pass
 
 
-def total_size(o, handlers=None, verbose=False):
-    """ Returns the approximate memory footprint an object and all of its contents.
-    Automatically finds the contents of the following builtin containers and
-    their subclasses:  tuple, list, deque, dict, set and frozenset.
-    To search other containers, add handlers to iterate over their contents:
-        handlers = {SomeContainerClass: iter,
-                    OtherContainerClass: OtherContainerClass.get_elements}
-    """
-    if handlers is None:
-        handlers = {}
-    dict_handler = lambda dst: chain.from_iterable(dst.items())
-    all_handlers = {tuple: iter,
-                    list: iter,
-                    deque: iter,
-                    dict: dict_handler,
-                    set: iter,
-                    frozenset: iter,
-                    }
-    all_handlers.update(handlers)  # user handlers take precedence
-    seen = set()  # track which object id's have already been seen
-    default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
-
-    def sizeof(obj):
-        if id(obj) in seen:  # do not double count the same object
-            return 0
-        seen.add(id(obj))
-        s = getsizeof(obj, default_size)
-
-        if verbose:
-            print(s, type(obj), repr(obj), file=stderr)
-
-        for typ, handler in all_handlers.items():
-            if isinstance(obj, typ):
-                s += sum(map(sizeof, handler(obj)))
-                break
-        return s
-
-    return sizeof(o)
+# def total_size(o, handlers=None, verbose=False):
+#     """ Returns the approximate memory footprint an object and all of its contents.
+#     Automatically finds the contents of the following builtin containers and
+#     their subclasses:  tuple, list, deque, dict, set and frozenset.
+#     To search other containers, add handlers to iterate over their contents:
+#         handlers = {SomeContainerClass: iter,
+#                     OtherContainerClass: OtherContainerClass.get_elements}
+#     """
+#     if handlers is None:
+#         handlers = {}
+#     dict_handler = lambda dst: chain.from_iterable(dst.items())
+#     all_handlers = {tuple: iter,
+#                     list: iter,
+#                     deque: iter,
+#                     dict: dict_handler,
+#                     set: iter,
+#                     frozenset: iter,
+#                     }
+#     all_handlers.update(handlers)  # user handlers take precedence
+#     seen = set()  # track which object id's have already been seen
+#     default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
+#
+#     def sizeof(obj):
+#         if id(obj) in seen:  # do not double count the same object
+#             return 0
+#         seen.add(id(obj))
+#         s = getsizeof(obj, default_size)
+#
+#         if verbose:
+#             print(s, type(obj), repr(obj), file=stderr)
+#
+#         for typ, handler in all_handlers.items():
+#             if isinstance(obj, typ):
+#                 s += sum(map(sizeof, handler(obj)))
+#                 break
+#         return s
+#
+#     return sizeof(o)
 
 
 # 反向互补
@@ -183,7 +181,7 @@ def get_ref_info(reference_path: str) -> tuple:
 # _ref_reverse_complement_会影响建立的哈西字典的大小
 # 如果要节约内存，将_ref_reverse_complement_设置为False,那么在过滤测序数据时，需要对read进行reverse complement
 def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_complement_: bool = False,
-                       _pos_: bool = True, _print_: bool = True) -> dict:
+                       _pos_: bool = True, _print_: bool = True, ref_number: int = None) -> dict:
     # 从reference文件中获取文件路径列表
     files_list = get_file_list(reference_path)
     if not files_list:
@@ -192,6 +190,8 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
     ref_kmer_dict = defaultdict(list)
     gene_number_count = 0
     for file in files_list:
+        # 用于记录每个基因的序列数量
+        ref_count = 0
         infile = open(file, 'r', encoding='utf-8', errors='ignore')
         file_name_gene = os.path.basename(file).split(".")[0]
         # 跳过第一行>
@@ -202,6 +202,11 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                 temp_str.append(line)
                 line = infile.readline()
             gene_number_count += 1
+            # 设定单个参考基因的最大序列数量
+            ref_count += 1
+            if ref_number is not None:
+                if ref_count >= ref_number:
+                    break
             # 保留seq序列中的数字和字母 去除换行符
             ref_seq = ''.join(filter(str.isalnum, ''.join(temp_str).upper()))
             for j in range(0, len(ref_seq) - _kmer_size_ + 1):
@@ -244,8 +249,12 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
             # json.dumps(my_dictionary)后面进行检测
             # print(json.dumps(ref_kmer_dict))
             if _print_:
-                print('Mem.:', round(total_size(ref_kmer_dict) / 1024 / 1024 / 1024, 2), 'G, Num. of Seq:',
-                      gene_number_count, end='\r')
+                print('Mem.:', round(psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024, 2),
+                      'G, Num. of Seq:', gene_number_count, end='\r')
+            else:
+                if gene_number_count % 1000 == 0:
+                    print("INFO: Mem. used: {} G, Num. of Seq: {}".format(round(
+                        psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024, 2), gene_number_count))
         infile.close()
     return ref_kmer_dict
 
