@@ -68,7 +68,8 @@ setup(
     # 项目主页
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.8',
-    packages=["src", "script"],
+    packages=["src"],
     install_requires=install_dependencies,
     scripts=script_to_install,
+    include_package_data=True
 )

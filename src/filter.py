@@ -101,7 +101,7 @@ def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
                 print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
                       sep="", end='\r')
             else:
-                print('handled {} m reads, {:.2f} s/m reads'.format(reads_count * 2 // 1000000, _time_end_))
+                print('INFO: handled {} M reads, {:.2f} s/M reads'.format(reads_count * 2 // 1000000, _time_end_))
     infile_1.close()
     infile_2.close()
 
