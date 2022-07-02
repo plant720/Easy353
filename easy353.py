@@ -7,6 +7,7 @@
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import argparse
+import os
 from src import assemble, filter
 
 
@@ -41,19 +42,16 @@ def args_init():
                       help="The maximum ratio of contig length to reference average length. Default:2.0", default=2.0)
     pars.add_argument("-change_seed", dest="change_seed", type=int, help="Times of changing seed. Default:32",
                       default=32)
-    pars.add_argument("-scaffold", dest="generate_scaffold", action="store_true",
-                      help="Whether to generate scaffolds or not.")
-    pars.add_argument("-fast", dest="fast", action="store_true", help="Whether to use fast mode.")
     # 默认限制使用的参考序列的数量
-    pars.add_argument("-reference_limit", dest="reference_limit", action="store_false",
-                      help="Whether to limit the numbers of reference sequences or not.")
+    pars.add_argument("-reference_number", dest="reference_number", type=int,
+                      help="The number of the reference sequences used to build hash table. Default:all", default=None)
+    pars.add_argument("-fast", dest="fast", action="store_true", help="Whether to use fast mode.")
     args = pars.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = args_init()
-    # python easy353.py -1 /Users/zzhen/Desktop/ara.1.fq -2 /Users/zzhen/Desktop/ara.2.fq -r /Users/zzhen/Desktop/new -o /Users/zzhen/Desktop/test_a -k1 31 -k2 41 -s 1 -t1 1 -t2 1
     fastq_files = tuple()
     _paired_reads_ = False
     if args.unpaired_fq_file:
@@ -61,19 +59,22 @@ if __name__ == "__main__":
     if args.fq_file_1 and args.fq_file_2:
         fastq_files = (args.fq_file_1, args.fq_file_2)
         _paired_reads_ = True
+    filtered_read_dir = os.path.join(args.output_dir, "filtered_reads")
+    if not os.path.isdir(filtered_read_dir):
+        os.makedirs(filtered_read_dir)
     if args.function_mode == 0 or args.function_mode == 1:
-        filter.filter_flow(_read_data_tuple_=fastq_files, _out_dir_=args.output_dir, _reference_path_=args.reference,
+        filter.filter_flow(_read_data_tuple_=fastq_files, _out_dir_=filtered_read_dir, _reference_path_=args.reference,
                            _kmer_size_=args.filter_kmer, _step_size_=args.step_length,
                            _ref_reverse_complement_=args.fast, _paired_reads_=_paired_reads_,
-                           _thread_for_filter_=args.filter_thread)
+                           _thread_for_filter_=args.filter_thread, _ref_number_=args.reference_number)
     if args.function_mode == 0 or args.function_mode == 2:
-        assemble.assemble_flow(_input_read_path_=args.output_dir, _out_dir_=args.output_dir, _ref_path_=args.reference,
+        assemble.assemble_flow(_input_read_path_=filtered_read_dir, _out_dir_=args.output_dir, _ref_path_=args.reference,
                                _assemble_kmer_size_=args.assemble_kmer, _assemble_thread_=args.assemble_thread,
                                _ref_reverse_complement_=True, _pos_=True,
                                _change_seed_=args.change_seed, _kmer_limit_count_=args.kmer_limit,
                                _min_percent_length_=args.minimum_length_ratio,
                                _max_percent_length_=args.maximum_length_ratio,
-                               _iteration_=1000, _write_scaffold_=args.generate_scaffold)
+                               _iteration_=1000)
     # out_dir = "/Users/zzhen/Desktop/result"
     # reads_dir = "reads"
     # re_assemble_dir = "re-assemble"

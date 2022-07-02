@@ -13,8 +13,10 @@ import os
 import shutil
 import time
 import gc
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
+import psutil
 import argparse
-
 # import my python file
 from src.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, \
     get_reads_info, log
@@ -99,7 +101,7 @@ def do_pair_reads_filter(_ref_kmer_dict_: dict, _kmer_size_: int, _step_size_: i
                 print('handled\t', reads_count * 2 // 1000000, 'm reads, ', round(_time_end_, 2), 's/m reads',
                       sep="", end='\r')
             else:
-                print('handled {} m reads, {} s/m reads'.format(reads_count * 2 // 1000000, round(_time_end_, 2)))
+                print('handled {} m reads, {:.2f} s/m reads'.format(reads_count * 2 // 1000000, _time_end_))
     infile_1.close()
     infile_2.close()
 
@@ -172,8 +174,8 @@ def refilter_one_gene(gene_name: str, gene_avg_len: int, _refilter_kmer_size_: i
 def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str, _kmer_size_: int,
                 _step_size_: int = 1, _ref_reverse_complement_: bool = False,
                 _read_reverse_complement_: bool = False, refilter: bool = True,
-                _clear_: bool = True, _pos_: bool = True,
-                _paired_reads_: bool = True, _thread_for_filter_: int = 4, _print_: bool = True):
+                _clear_: bool = True, _pos_: bool = True, _paired_reads_: bool = True,
+                _thread_for_filter_: int = 4, _print_: bool = True, _ref_number_: int = None):
     # 初始化操作
     if not os.path.isdir(_out_dir_):
         os.makedirs(_out_dir_)
@@ -194,17 +196,20 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
     # list[0] 是kmer出现次数
     # list[1] 是kmer出现在某条参考基因上的百分比位置之和
     # list[2:]是该kmer在哪些文件(基因)中出现
-    ref_kmer_dict = make_ref_kmer_dict(_reference_path_, _kmer_size_, _ref_reverse_complement_, _pos_, _print_)
+    ref_kmer_dict = make_ref_kmer_dict(_reference_path_, _kmer_size_, _ref_reverse_complement_, _pos_, _print_,
+                                       _ref_number_)
     print("Hash dictionary has been made")
     _time_build_hash_end = time.time()
-    print('Time used for building hash table: {} s'.format(round(_time_build_hash_end - _time_build_hash_start_, 2)))
+    print('Time used for building hash table: {:.2f} s'.format(_time_build_hash_end - _time_build_hash_start_))
 
     # _clear_用于将输出文件夹中的原有同名文件删除,新建文件
     if _clear_:
         for key in ref_path_dict:
             with open(os.path.join(_out_dir_, key + ".fasta"), 'w'):
                 pass
-    print('Filter reads from fq_files based on hash table')
+    print("INFO: The memory usage of the current process is: {:.2f} GB".
+          format(psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024))
+    print('INFO: Filter reads from fq_files based on hash table with {} thread'.format(_thread_for_filter_))
 
     _time_filter_start_ = time.time()
     # 当测序数据是unpaired_end时
@@ -252,7 +257,7 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
             print("The number of paired_end fastq files is not equal")
             exit(0)
     _time_filter_end_ = time.time()
-    print('Time used for filter: {} s'.format(round(_time_filter_end_ - _time_filter_start_, 2)))
+    print('Time used for filter: {:.2f} s'.format(_time_filter_end_ - _time_filter_start_))
     # 过滤完后 手动清理内存
     del ref_kmer_dict
     gc.collect()
@@ -293,16 +298,16 @@ def filter_flow(_read_data_tuple_: tuple, _out_dir_: str, _reference_path_: str,
             # if sys.platform in ['darwin']:
             #     multiprocessing.set_start_method('fork')
             # 创建进程池
-            pool = multiprocessing.Pool(processes=min(_thread_for_filter_, len(refilter_gene_info_dict)))
-            # 创建进程池中的进程
-            for gene_name, gene_info in refilter_gene_info_dict.items():
-                pool.apply_async(func=refilter_one_gene,
-                                 args=(gene_name, gene_info["ref_avg_length"],
-                                       _kmer_size_ + 2, ref_path_dict[gene_name],
-                                       _out_dir_, 1,),
-                                 callback=refilter_gene_info_dict.update)
-            pool.close()
-            pool.join()
+            # 使用多线程进行过滤
+            with ThreadPoolExecutor(max_workers=min(_thread_for_filter_, len(refilter_gene_info_dict))) as executor:
+                futures = [executor.submit(
+                    partial(refilter_one_gene, _refilter_kmer_size_=_kmer_size_ + 2, _out_dir_=_out_dir_,
+                            _refilter_step_size_=1), gene_name=gene_name, gene_avg_len=gene_info["ref_avg_length"],
+                    _reference_path_=ref_path_dict[gene_name])
+                    for gene_name, gene_info in refilter_gene_info_dict.items()]
+                for future in as_completed(futures):
+                    refilter_gene_info_dict.update(future.result())
+                    # 输出log信息
         # 输出log信息
         filter_gene_info_dict.update(refilter_gene_info_dict)
         log_file = os.path.join(_out_dir_, "filter_log.csv")

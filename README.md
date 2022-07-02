@@ -2,38 +2,78 @@
 
 ## Introduction
 
-Easy353 is a tool for recovering Angiosperms353 gene set(AGS), which can filter and de novo assemble reads from sequencing data based on databases, helping users capture AGS accurately and effectively.
+Easy353 is a tool for recovering Angiosperms353 gene set(AGS), which can filter and de novo assemble reads from sequencing data based on data from https://treeoflife.kew.org/, helping users capture AGS accurately and effectively.
 
-## Instructions
+## Installation
 
-It is recommended to download the latest binary release (Linux or OSX) there: https://github.com/GATB/minia/releases
+Easy353 is an easy-to-use pure Python program and is designed to be compatible with versions higher than 3.6. Users on Windows, macOS, and Linux computers could run Easy353 directly from the command line. We also provide a user-friendly graphical interface for Windows and macOS. 
 
-Otherwise, Minia may be compiled from sources as follows:
+### Easy353 with GUI
 
+It is advised to get Easy353-GUI from https://github.com/plant720/Easy353/release if you use Windows or macOS. Tha app file for macOS and the exe file for Windows, which be run by double-clicking.
+
+### Easy353 for command line
+
+There are several generally 2 ways to install Easy353:
+
+* Option 1 **Using conda**
+
+- Option 2 **Using the setup.py**
+
+#### Option 1. Using conda
+
+
+
+#### Option 2. Using the setup.py
+
+You should use git to download the entire Easy353 repository and install the Easy353 using the setup.py.
+
+```shell
+# get a local copy of easy353 source code
+git clone https://github.com/plant720/Easy353.git
+# install the code 
+cd Easy353
+python setup.py install --user
 ```
-# get a local copy of minia source code
-git clone --recursive https://github.com/GATB/minia.git
 
-# compile the code an run a simple test on your computer
-cd minia
-sh INSTALL
+Using the setup.py, you should have Python library setuptools installed (`sudo apt install -y python-setuptools` or `sudo yum install -y python-setuptools`or `pip install setuptools`).
+
+## Test
+
+* Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/data):
+
+```shell
+wget https://github.com/plant720/Easy353Test/blob/master/data/Gmax_sim_100_fir.fastq.gz
+wget https://github.com/plant720/Easy353Test/blob/master/data/Gmax_sim_100_sec.fastq.gz
 ```
 
-## Requirements
+### Easy353-cmd
 
-CMake 3.10+; see http://www.cmake.org/cmake/resources/software.html
+* After installation of Easy353 and download the simulation data of *Glycine max*, please download the AGS of related species as the reference
 
-C++11 compiler; (g++ version>=4.7 (Linux), clang version>=4.3 (Mac OSX))
+```shell
+# download the AGS according to taxonomy: Glycine_max is one species of Fabaceae family
+# The ref can be found at ref/353gene
+build_database.py -o 353_ref_Fabaceae -c Fabaceae -t 10 -exclude Glycine_max -generate 
+```
+
+* then do the recover of  Angiosperms353 gene set(AGS)
+
+```shell
+easy353.py -1 Gmax_sim_100_fir.fastq.gz -2 Gmax_sim_100_sec.fastq.gz -r 353_ref_Fabaceae -o test_package -k1 31 -k2 41 -t1 4 -t2 4 -fast
+```
+
+You are going to get the same result as [here](https://github.com/plant720/Easy353Test/tree/master/result/Gmax_100_result).
+
+### Easy353-GUI
+
+* For Easy353-GUI, you should set the `Paired fq file 1`, `Paired fq file 2`,`Taxonomy` and `Output dir` as shown in the image below
+
+![image-20220629211901122](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220629211901.png)
 
 ## User manual
 
-Type `minia` without any arguments for usage instructions.
-
-A more complete manual is here: https://github.com/GATB/minia/raw/master/doc/manual.pdf
-
-## What is new ? (2018)
-
-Minia version 1 was implementing a rather unusual way to perform the assembly: traverse the graph and attempt to jump over errors and variants. This worked rather okay but not for e.g. repeated regions with many sequencing errors. Minia version 2 also followed the same philosophy, and had major improvements coming from the integration of the GATB library (mostly speed improvements) and cascading Bloom filter. Minia version 3 uses newer techniques and has virtually nothing in common with Minia 1: there is no Bloom filter anymore (the data structure is based on unitigs produced by the BCALM software). The assembly is performed using graph simplifications that are heavily inspired by the SPAdes assembler.
+A more complete manual is here: https://github.com/plant720/Easy353/docs/manual.pdf
 
 ## Contact
 

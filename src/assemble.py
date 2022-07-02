@@ -13,6 +13,9 @@ import multiprocessing
 import collections
 
 # import my python file
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import partial
+
 from src.utils import make_ref_kmer_dict, get_seq_avg_length, reverse_complement_limit, \
     get_reads_info, get_file_list, log
 
@@ -242,22 +245,24 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
                       _assemble_kmer_size_: int, _ref_reverse_complement_: bool = True,
                       _pos_: bool = True, _change_seed_: int = 1000, _kmer_limit_count_: int = 2,
                       _min_percent_length_: float = 0.5, _max_percent_length_: float = 1.5,
-                      _iteration_: int = 1000, _generate_scaffold_: bool = True, _print_: bool = True) -> dict:
+                      _iteration_: int = 1000, _print_: bool = True) -> dict:
     assemble_gene_info_dict = collections.defaultdict(dict)
     # 设定输出文件名
     gene_name = os.path.basename(_ref_file_).split(".")[0]
+    target_file_name = gene_name + ".target.fasta"
+    unrecovered_dir = os.path.join(_out_dir_, "unrecovered_genes")
+
     # 根据_ref_file_获取gene的平均长度和ref中的序列数量
     ref_seq_count, ref_seq_length = get_reads_info(_ref_file_)
     gene_avg_len = round(ref_seq_length / ref_seq_count, 2)
 
-    _log_file_ = os.path.join(_out_dir_, "assemble_log.txt")
-    _contig_path_ = os.path.join(_out_dir_, "contigs", gene_name + ".contig.fasta")
-    _short_contig_path_ = os.path.join(_out_dir_, "short_contigs", gene_name + ".contig.fasta")
+    _contig_path_ = os.path.join(_out_dir_, target_file_name)
+    _short_contig_path_ = os.path.join(unrecovered_dir, target_file_name)
 
     assemble_success_flag = False
     is_normal_contig = False
-    gene_info = {"assemble_success_flag": assemble_success_flag, "contig_length": 0, "short_contig_length": 0,
-                 "scaffold_length": 0, "filter_reads_count": 0, "kmer_usage_rate": 0,
+    gene_info = {"assemble_success_flag": assemble_success_flag, "target_gene_length": 0, "unrecovered_gene_length": 0,
+                 "filter_reads_count": 0, "kmer_usage_rate": 0,
                  "seed": "", "assemble_kmer_size": _assemble_kmer_size_,
                  "kmer_limit": _kmer_limit_count_, "contig_coverage_depth": 0}
     # read 产生的Kmer总数和不同种类Kmer的数量
@@ -339,7 +344,6 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
 
     short_contig_length = 0
     contig_length = 0
-    scaffold_length = 0
     # 如果序列太短 策略是更换seed
     if len(contig) / gene_avg_len < _min_percent_length_:
         # 记录当前contig和kmer相关的信息
@@ -409,7 +413,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             print("Assemble {} gene succeed. Ref length: {}, best contig length: {}.".format
                   (gene_name, gene_avg_len, len(best_contig)))
         with open(_contig_path_, 'w') as out:
-            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_contig_k' + str(_assemble_kmer_size_) +
+            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_recovered_k' + str(_assemble_kmer_size_) +
                       "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     else:
@@ -417,36 +421,17 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             print("Assemble {} gene failed. Ref length: {}, best contig length: {}.".format
                   (gene_name, gene_avg_len, len(best_contig)))
         with open(_short_contig_path_, 'w') as out:
-            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_short_contig_k' +
+            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_unrecovered_k' +
                       str(_assemble_kmer_size_) + "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
-    # 写入scaffold
-    if _generate_scaffold_:
-        if _print_:
-            print("Generate scaffold for {} gene.".format(gene_name))
-        seed_list.insert(0, _cur_seed_info_)
-        scaffold = get_scaffold(_read_kmer_dict_, seed_list, _kmer_limit_count_, gene_avg_len, iteration=_iteration_)
-        with open(os.path.join(_out_dir_, 'scaffolds', gene_name + ".scaffold.fasta"), 'w') as out:
-            scaffold_length = len(scaffold.replace("N", ""))
-            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + '_scaffold_k' + str(_assemble_kmer_size_)
-                      + "_" + str(scaffold_length) + '\n')
-            out.write(scaffold + '\n')
-        if _print_:
-            if scaffold_length / gene_avg_len > _min_percent_length_:
-                print("Generate scaffold for {} gene succeed. Ref length: {}, scaffold length:{}"
-                      .format(gene_name, gene_avg_len, scaffold_length))
-            else:
-                print("Generate scaffold for {} gene failed. Ref length: {}, scaffold length:{}"
-                      .format(gene_name, gene_avg_len, scaffold_length))
 
     # 使用used_kmer_count*kmer_size / unique_kmer_count 计算contig的覆盖率
     # 覆盖深度
     contig_coverage_depth = round(best_kmer_count * _assemble_kmer_size_ / best_unique_kmer_number, 2)
 
     gene_info["assemble_success_flag"] = assemble_success_flag
-    gene_info["contig_length"] = contig_length
-    gene_info["short_contig_length"] = short_contig_length
-    gene_info["scaffold_length"] = scaffold_length
+    gene_info["target_gene_length"] = contig_length
+    gene_info["unrecovered_gene_length"] = short_contig_length
     gene_info["filter_reads_count"] = filter_reads_count
     gene_info["kmer_usage_rate"] = round(best_kmer_count / read_kmer_count_sum, 2)
     gene_info["seed"] = best_seed_seq
@@ -455,32 +440,22 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     return assemble_gene_info_dict
 
 
-def assemble_init(_out_dir_: str):
-    # 设定assemble contig的输出文件夹
-    # 当存在这些目录文件时,会删除该目录及其下的所有文件,而后重新生成文件夹
-    if not os.path.isdir(os.path.join(_out_dir_, 'contigs')):
-        os.makedirs(os.path.join(_out_dir_, 'contigs'))
-    else:
-        shutil.rmtree(os.path.join(_out_dir_, 'contigs'))
-        os.makedirs(os.path.join(_out_dir_, 'contigs'))
-    if not os.path.isdir(os.path.join(_out_dir_, 'short_contigs')):
-        os.makedirs(os.path.join(_out_dir_, 'short_contigs'))
-    else:
-        shutil.rmtree(os.path.join(_out_dir_, 'short_contigs'))
-        os.makedirs(os.path.join(_out_dir_, 'short_contigs'))
-    if not os.path.isdir(os.path.join(_out_dir_, 'scaffolds')):
-        os.makedirs(os.path.join(_out_dir_, 'scaffolds'))
-    else:
-        shutil.rmtree(os.path.join(_out_dir_, 'scaffolds'))
-        os.makedirs(os.path.join(_out_dir_, 'scaffolds'))
-
-
 def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _assemble_kmer_size_: int,
                   _assemble_thread_: int = 4, _ref_reverse_complement_: bool = True, _pos_: bool = True,
                   _change_seed_: int = 1000, _kmer_limit_count_: int = 2, _min_percent_length_: float = 1.0,
-                  _max_percent_length_: float = 2.0, _iteration_: int = 1000, _write_scaffold_: bool = True):
+                  _max_percent_length_: float = 2.0, _iteration_: int = 1000):
     # 设定assemble contig的输出文件夹
-    assemble_init(_out_dir_)
+    # 当存在这些目录文件时,会删除该目录及其下的所有文件,而后重新生成文件夹
+    assemble_out_dir = os.path.join(_out_dir_, "target_genes")
+    if not os.path.isdir(assemble_out_dir):
+        os.makedirs(assemble_out_dir)
+    else:
+        shutil.rmtree(assemble_out_dir)
+        os.makedirs(assemble_out_dir)
+
+    if not os.path.isdir(os.path.join(assemble_out_dir, "unrecovered_genes")):
+        os.makedirs(os.path.join(assemble_out_dir, "unrecovered_genes"))
+
     print('Assemble reads')
     file_dict = collections.defaultdict(dict)
     for ref_file_path in get_file_list(_ref_path_):
@@ -494,36 +469,32 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
             file_dict[gene_name]["reads_file"] = None
     # 用于存储基因是否过滤成功的信息
     assemble_gene_info_dict = collections.defaultdict(dict)
-    if _assemble_thread_ > 1:
-        pool = multiprocessing.Pool(min(_assemble_thread_, len(file_dict)))
-        for gene_name, file_info in file_dict.items():
-            if file_info["reads_file"] is None:
-                continue
-            pool.apply_async(func=assemble_one_file,
-                             args=(file_info["reads_file"], _out_dir_, file_info["ref_file"], _assemble_kmer_size_,
-                                   _ref_reverse_complement_, _pos_, _change_seed_, _kmer_limit_count_,
-                                   _min_percent_length_, _max_percent_length_, _iteration_, _write_scaffold_,),
-                             callback=assemble_gene_info_dict.update)
-        pool.close()
-        pool.join()
-    else:
-        for gene_name, file_info in file_dict.items():
-            if file_info["reads_file"] is None:
-                continue
-            assemble_gene_info_dict.update(
-                assemble_one_file(file_info["reads_file"], _out_dir_, file_info["ref_file"], _assemble_kmer_size_,
-                                  _ref_reverse_complement_, _pos_, _change_seed_, _kmer_limit_count_,
-                                  _min_percent_length_, _max_percent_length_, _iteration_, _write_scaffold_, ))
+    count = 0
+    with ThreadPoolExecutor(max_workers=min(_assemble_thread_, len(file_dict))) as executor:
+        futures = [executor.submit(
+            partial(assemble_one_file, _out_dir_=assemble_out_dir, _assemble_kmer_size_=_assemble_kmer_size_,
+                    _ref_reverse_complement_=_ref_reverse_complement_, _pos_=_pos_,
+                    _change_seed_=_change_seed_, _kmer_limit_count_=_kmer_limit_count_,
+                    _min_percent_length_=_min_percent_length_, _max_percent_length_=_max_percent_length_,
+                    _iteration_=_iteration_),
+            _reads_file_=file_info["reads_file"], _ref_file_=file_info["ref_file"])
+            for gene_name, file_info in file_dict.items()]
+        for future in as_completed(futures):
+            assemble_gene_info_dict.update(future.result())
+            count += 1
+            if count % 10 == 0:
+                print("INFO: {} / {} genes have been assembled!".format(count, len(file_dict)))
+
     assemble_flag_list = [i["assemble_success_flag"] for i in assemble_gene_info_dict.values()]
     print("Assemble Done! {} / {} succeed".format(assemble_flag_list.count(True), len(assemble_flag_list)))
     # 输出log信息
-    log_file = os.path.join(_out_dir_, "assemble_log.csv")
-    log(log_file, "gene_id", "contig_length", "short_contig_length", "scaffold_length", "contig_coverage_depth",
+    log_file = os.path.join(assemble_out_dir, "assemble_log.csv")
+    log(log_file, "gene_id", "target_gene_length", "unrecovered_gene_length", "contig_coverage_depth",
         "assemble_kmer", "assemble_seed", "kmer_limit", "filter_reads_count",
         "kmer_usage_rate")
     for gene_name, gene_info in assemble_gene_info_dict.items():
-        log(log_file, gene_name, gene_info["contig_length"], gene_info["short_contig_length"],
-            gene_info["scaffold_length"], gene_info["contig_coverage_depth"], gene_info["assemble_kmer_size"],
+        log(log_file, gene_name, gene_info["target_gene_length"], gene_info["unrecovered_gene_length"],
+            gene_info["contig_coverage_depth"], gene_info["assemble_kmer_size"],
             gene_info["seed"], gene_info["kmer_limit"], gene_info["filter_reads_count"],
             gene_info["kmer_usage_rate"])
     return assemble_gene_info_dict
@@ -550,12 +521,10 @@ if __name__ == "__main__":
                       help="The maximum ratio of contig length to reference average length. Default:2.0", default=2.0)
     pars.add_argument("-change_seed", dest="change_seed", type=int, help="Times of changing seed. Default:32",
                       default=32)
-    pars.add_argument("-scaffold", dest="generate_scaffold", action="store_true",
-                      help="Whether to generate scaffolds or not.")
     pars.add_argument("-fast", dest="fast", action="store_true", help="Whether to use fast mode.")
     # 默认限制使用的参考序列的数量
-    pars.add_argument("-reference_limit", dest="reference_limit", action="store_false",
-                      help="Whether to limit the numbers of reference sequences or not.")
+    pars.add_argument("-reference_number", dest="reference_number", type=int,
+                      help="The number of the reference sequences used to build hash table. Default:all", default=None)
     args = pars.parse_args()
 
     assemble_flow(_input_read_path_=args.input_dir, _out_dir_=args.output_dir, _ref_path_=args.reference,
@@ -563,7 +532,7 @@ if __name__ == "__main__":
                   _assemble_thread_=args.assemble_thread, _ref_reverse_complement_=True, _pos_=True,
                   _change_seed_=args.change_seed, _kmer_limit_count_=args.kmer_limit,
                   _min_percent_length_=args.minimum_length_ratio, _max_percent_length_=args.maximum_length_ratio,
-                  _iteration_=1000, _write_scaffold_=args.generate_scaffold)
+                  _iteration_=1000)
     # assemble_one_file("/Users/zzhen/Desktop/test/7367.fasta", "/Users/zzhen/Desktop/debug"
     #                   , "/Users/zzhen/Desktop/new/353gene/7367.fasta",
     #                   41, True, True, 32, 2, 1.0, 2.0, 1000, False)

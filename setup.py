@@ -20,17 +20,16 @@
 import platform
 import sys
 import setuptools
-from setuptools import setup, find_packages
+from setuptools import setup
 
-script_to_install = ["easy353.py", "src/build_database.py", "script/alignment.py", "script/combine.py",
-                     "script/compare.py", "script/statistics.py", "script/tree.py"]
+script_to_install = ["easy353.py", "build_database.py", "script/compare.py"]
 
 # python libs
 install_dependencies = []
 try:
     import biopython
 except ImportError:
-    install_dependencies.append("bipython>=1.70")
+    install_dependencies.append("biopython>=1.70")
 else:
     sys.stdout.write("Existed module numpy " + str(biopython.__version__) + "\n")
 
@@ -52,13 +51,6 @@ except ImportError:
     install_dependencies.append("beautifulsoup4>=4.9.0")
 else:
     sys.stdout.write("Existed module beautifulsoup4 " + str(beautifulsoup4.__version__) + "\n")
-try:
-    import tqdm
-except ImportError:
-    install_dependencies.append("tqdm>=4.31.1")
-else:
-    sys.stdout.write("Existed module tqdm " + str(tqdm.__version__) + "\n")
-
 
 sys.stdout.write("Python " + str(sys.version).replace("\n", " ") + "\n")
 sys.stdout.write("PLATFORM: " + " ".join(platform.uname()) + "\n")
@@ -76,7 +68,7 @@ setup(
     # 项目主页
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.8',
-    packages=find_packages(),
+    packages=["src", "script"],
     install_requires=install_dependencies,
     scripts=script_to_install,
 )

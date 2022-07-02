@@ -58,7 +58,6 @@ if __name__ == '__main__':
                       default="combine")
     pars.add_argument("-p", metavar='<float>', type=float, help='''the percent of species''', required=False,
                       default=0.8)
-    pars.add_argument("-scaffold", action="store_true", help="whether to combine scaffold")
     args = pars.parse_args()
 
     # 一个存放多个文件夹的列表
@@ -67,5 +66,3 @@ if __name__ == '__main__':
     output_dir = args.o
     percent = args.p
     combine_contig_file(results_dir, output_dir, species_num=len(results_dir), percent=percent, segment="contig")
-    if scaffold:
-        combine_contig_file(results_dir, output_dir, species_num=len(results_dir), percent=percent, segment="scaffold")

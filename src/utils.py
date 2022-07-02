@@ -253,8 +253,8 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                       'G, Num. of Seq:', gene_number_count, end='\r')
             else:
                 if gene_number_count % 1000 == 0:
-                    print("INFO: Mem. used: {} G, Num. of Seq: {}".format(round(
-                        psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024, 2), gene_number_count))
+                    print("INFO: Mem. used: {:.2f} G, Num. of Seq: {}".format(
+                        psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024, gene_number_count))
         infile.close()
     return ref_kmer_dict
 

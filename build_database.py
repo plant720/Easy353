@@ -11,11 +11,10 @@ import csv
 import json
 import os
 import re
-from tqdm import tqdm
 from collections import defaultdict
 from urllib.error import HTTPError
 from urllib.request import urlretrieve
-from multiprocessing.dummy import Pool
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from Bio import SeqIO
 
@@ -34,7 +33,7 @@ def network_connect() -> bool:
 # return {"Family1":"Family","Genus1":"Genus"}
 def parse_classification_json() -> dict:
     _classification_ = defaultdict(str)
-    classification_file_path = os.path.join(os.path.dirname(__file__), "classification.json")
+    classification_file_path = os.path.join(os.path.dirname(__file__), "src/classification.json")
     with open(classification_file_path, "r", encoding="UTF-8") as f:
         _classification_dict_ = json.load(f)
     for key, value in _classification_dict_.items():
@@ -64,7 +63,7 @@ def detect_classification(classifications: list) -> dict:
 # 根据传入的分类信息获取需要下载的文件路径
 def generate_download_info(classification_dict: dict) -> list:
     result_list = []
-    kew_data_file_path = os.path.join(os.path.dirname(__file__), "kew_data.csv")
+    kew_data_file_path = os.path.join(os.path.dirname(__file__), "src/kew_data.csv")
     _reader_ = csv.DictReader(open(kew_data_file_path, "r", newline=""))
     # 将归属于目、科、属的数据存储在list中
     for key, value in classification_dict.items():
@@ -77,42 +76,19 @@ def generate_download_info(classification_dict: dict) -> list:
     return result_list
 
 
-# 根据ftp的url下载文件
-def download_fasta_file(url, file_path) -> bool:
-    flag = False
+# 用于下载文件的函数
+def download_fasta_file(_spec_info_: dict, output_dir: str):
+    info = None
+    url = _spec_info_['Fasta file url']
+    file_path = os.path.join(output_dir, _spec_info_['Fasta file name'])
     if os.path.isfile(file_path):
-        flag = True
-    try:
-        urlretrieve(url, file_path)
-        flag = True
-    except HTTPError:
-        print(url + " does not exist")
-    return flag
-
-
-# download fasta file according to dict
-def download_dict(spec_info: dict, _input_dir_: str) -> bool:
-    url = spec_info['Fasta file url']
-    file_path = os.path.join(_input_dir_, spec_info['Fasta file name'])
-    return download_fasta_file(url, file_path)
-
-
-# 根据传入的list信息下载
-def download_data(spec_info_list: list, _input_dir_: str, _thread_: int = 4) -> None:
-    # 对于多参数函数，如果我们只想对它的一个参数在多进程任务中依次取可迭代对象中各个值，其他参数固定，
-    # 可以使用偏函数构造出单参数函数
-    if _thread_ > 1:
-        with Pool(processes=_thread_) as pool:
-            result = pool.imap(partial(download_dict, input_dir=_input_dir_), spec_info_list)
+        info = "INFO: File {} already exists".format(file_path)
     else:
-        for _spec_info_ in spec_info_list:
-            download_dict(_spec_info_, _input_dir_)
-    return
-
-
-# todo:处理exclude
-def get_exclude(exclude: str):
-    ...
+        try:
+            urlretrieve(url, file_path)
+        except HTTPError:
+            info = "INFO: Url {} does not exist".format(url)
+    return info
 
 
 # 根据传入的文件夹获取文件夹下所有fasta文件的路径
@@ -148,7 +124,7 @@ def generate_gene_file(_file_path_list_: list, _output_dir_: str, _exclude_speci
                         _out_file_.write(">" + record.id + "\n")
                         _out_file_.write(str(record.seq) + "\n")
                 except IndexError:
-                    print("The record is not standard")
+                    print("The record {}is not standard".format(record.description))
                     _out_file_.write(">" + record.description + "\n")
                     _out_file_.write(str(record.seq) + "\n")
             _out_file_.close()
@@ -194,7 +170,7 @@ if __name__ == '__main__':
         # 根据传入的分类信息需要下载的物种信息 是元素为dict的list
         down_spec_info = generate_download_info(detect_classification(args.classification))
         # 检测已经存在的文件名
-        existed_files = [i.split("/")[1] for i in generate_fasta_path(args.input_dir)]
+        existed_files = [os.path.basename(i) for i in generate_fasta_path(input_dir)]
         # 获取还未下载的文件
         down_spec_info = [i for i in down_spec_info if i not in existed_files]
         # 如果需要将下载的信息写入文件
@@ -208,17 +184,23 @@ if __name__ == '__main__':
         # 对于多参数函数，如果我们只想对它的一个参数在多进程任务中依次取可迭代对象中各个值，其他参数固定，
         # 可以使用偏函数构造出单参数函数
         print("INFO: Download species data")
-        bar_format = '{desc}{percentage:3.0f}%|{bar}|{n_fmt}/{total_fmt}'
-        if _thread_ > 1:
-            with Pool(processes=_thread_) as pool:
-                result = list(tqdm(pool.imap(partial(download_dict, input_dir=input_dir), down_spec_info),
-                                   total=len(down_spec_info), desc="download files", bar_format=bar_format))
-                print(result)
-        else:
-            with tqdm(total=len(down_spec_info), desc="download files", bar_format=bar_format) as _tqdm:
-                for _spec_info_ in down_spec_info:
-                    download_dict(_spec_info_, input_dir)
-                    _tqdm.update(1)
+
+        # 下载文件
+        count = 1
+        # 使用concurrent.features中的ThreadPoolExecutor类来实现多线程下载
+        with ThreadPoolExecutor(max_workers=_thread_) as executor:
+            # 对于多参数函数，如果我们只想对它的一个参数在多进程任务中依次取可迭代对象中各个值，其他参数固定，
+            # 可以使用偏函数构造出单参数函数 一般来说必须采用关键字参数的形式给构建出的偏函数传参，因为如果以无关键字参数的方式，该实参将试图传递给第一个形参
+            # http://c.biancheng.net/view/5674.html
+            futures = [executor.submit(partial(download_fasta_file, output_dir=output_dir), _spec_info_) for _spec_info_
+                       in
+                       down_spec_info]
+            for future in as_completed(futures):
+                if future.result() is not None:
+                    print(future.result())
+                if count % 10 == 0:
+                    print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
+                count += 1
     if args.exclude is not None:
         exclude_species.extend(args.exclude)
     if args.exclude_file is not None:
