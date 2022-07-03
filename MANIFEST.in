@@ -1,3 +1,3 @@
-include src/classification.json
-include src/kew_data.csv
-include src/genes.csv
+include Easy353Lib/classification.json
+include Easy353Lib/kew_data.csv
+include Easy353Lib/genes.csv
