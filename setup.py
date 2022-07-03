@@ -70,7 +70,7 @@ setup(
     python_requires='>=3.7',
     install_requires=install_dependencies,
     scripts=script_to_install,
-    package=["Easy353Lib"],
+    packages=["Easy353Lib"],
     package_data={'Easy353Lib': ["Easy353Lib/kew_data.csv", "Easy353Lib/classification.json", "Easy353Lib/genes.csv"]},
     include_package_data=True,
     zip_safe=False

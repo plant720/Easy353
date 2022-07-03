@@ -17,6 +17,7 @@ from urllib.request import urlretrieve
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
 from Bio import SeqIO
+import Easy353Lib
 
 
 # detect network_connect
@@ -33,7 +34,8 @@ def network_connect() -> bool:
 # return {"Family1":"Family","Genus1":"Genus"}
 def parse_classification_json() -> dict:
     _classification_ = defaultdict(str)
-    classification_file_path = os.path.join(os.path.dirname(__file__), "Easy353Lib/classification.json")
+    classification_file_path = os.path.join(os.path.split(
+        os.path.realpath(Easy353Lib.__file__))[0], "classification.json")
     with open(classification_file_path, "r", encoding="UTF-8") as f:
         _classification_dict_ = json.load(f)
     for key, value in _classification_dict_.items():
@@ -63,7 +65,8 @@ def detect_classification(classifications: list) -> dict:
 # 根据传入的分类信息获取需要下载的文件路径
 def generate_download_info(classification_dict: dict) -> list:
     result_list = []
-    kew_data_file_path = os.path.join(os.path.dirname(__file__), "Easy353Lib/kew_data.csv")
+    kew_data_file_path = os.path.join(os.path.split(
+        os.path.realpath(Easy353Lib.__file__))[0], "kew_data.csv")
     _reader_ = csv.DictReader(open(kew_data_file_path, "r", newline=""))
     # 将归属于目、科、属的数据存储在list中
     for key, value in classification_dict.items():
