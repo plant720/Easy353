@@ -21,12 +21,12 @@ from multiprocessing import Pool
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, as_completed
 # import my python file
-from src.filter import do_reads_filter, do_pair_reads_filter, refilter_one_gene
-from src.utils import make_ref_kmer_dict, get_file_size, get_ref_info, \
+from Easy353Lib.filter import do_reads_filter, do_pair_reads_filter, refilter_one_gene
+from Easy353Lib.utils import make_ref_kmer_dict, get_file_size, get_ref_info, \
     get_reads_info, log, get_file_list
 from build_database import generate_download_info, detect_classification
 from build_database import generate_fasta_path, generate_gene_file
-from src.assemble import assemble_one_file
+from Easy353Lib.assemble import assemble_one_file
 
 
 # 进行窗口的的初始化

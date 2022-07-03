@@ -33,7 +33,7 @@ def network_connect() -> bool:
 # return {"Family1":"Family","Genus1":"Genus"}
 def parse_classification_json() -> dict:
     _classification_ = defaultdict(str)
-    classification_file_path = os.path.join(os.path.dirname(__file__), "src/classification.json")
+    classification_file_path = os.path.join(os.path.dirname(__file__), "Easy353Lib/classification.json")
     with open(classification_file_path, "r", encoding="UTF-8") as f:
         _classification_dict_ = json.load(f)
     for key, value in _classification_dict_.items():
@@ -63,7 +63,7 @@ def detect_classification(classifications: list) -> dict:
 # 根据传入的分类信息获取需要下载的文件路径
 def generate_download_info(classification_dict: dict) -> list:
     result_list = []
-    kew_data_file_path = os.path.join(os.path.dirname(__file__), "src/kew_data.csv")
+    kew_data_file_path = os.path.join(os.path.dirname(__file__), "Easy353Lib/kew_data.csv")
     _reader_ = csv.DictReader(open(kew_data_file_path, "r", newline=""))
     # 将归属于目、科、属的数据存储在list中
     for key, value in classification_dict.items():
@@ -130,8 +130,7 @@ def generate_gene_file(_file_path_list_: list, _output_dir_: str, _exclude_speci
             _out_file_.close()
     return
 
-
-if __name__ == '__main__':
+def main():
     # 设置输出文件夹
     pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                    description='''The script for getting the ref sequences from kew.org''')
@@ -220,3 +219,8 @@ if __name__ == '__main__':
     file_path_list = list((set(input_file_list).union(set(output_file_list))))
     generate_gene_file(_file_path_list_=file_path_list,
                        _output_dir_=os.path.join(output_dir, "353gene"), _exclude_species_=exclude_species)
+
+
+if __name__ == '__main__':
+    main()
+

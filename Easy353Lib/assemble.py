@@ -7,16 +7,14 @@
 # @Description:
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import os
-import shutil
+from shutil import rmtree
 import argparse
-import multiprocessing
 import collections
 
 # import my python file
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import partial
-
-from src.utils import make_ref_kmer_dict, get_seq_avg_length, reverse_complement_limit, \
+from Easy353Lib.utils import make_ref_kmer_dict, get_seq_avg_length, reverse_complement_limit, \
     get_reads_info, get_file_list, log
 
 
@@ -450,7 +448,7 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
     if not os.path.isdir(assemble_out_dir):
         os.makedirs(assemble_out_dir)
     else:
-        shutil.rmtree(assemble_out_dir)
+        rmtree(assemble_out_dir)
         os.makedirs(assemble_out_dir)
 
     if not os.path.isdir(os.path.join(assemble_out_dir, "unrecovered_genes")):

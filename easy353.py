@@ -8,7 +8,9 @@
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import argparse
 import os
-from src import assemble, filter
+from shutil import move
+import Easy353Lib
+from Easy353Lib import assemble, filter
 
 
 # 参数初始化
@@ -50,7 +52,7 @@ def args_init():
     return args
 
 
-if __name__ == "__main__":
+def main():
     args = args_init()
     fastq_files = tuple()
     _paired_reads_ = False
@@ -68,27 +70,15 @@ if __name__ == "__main__":
                            _ref_reverse_complement_=args.fast, _paired_reads_=_paired_reads_,
                            _thread_for_filter_=args.filter_thread, _ref_number_=args.reference_number)
     if args.function_mode == 0 or args.function_mode == 2:
-        assemble.assemble_flow(_input_read_path_=filtered_read_dir, _out_dir_=args.output_dir, _ref_path_=args.reference,
+        assemble.assemble_flow(_input_read_path_=filtered_read_dir, _out_dir_=args.output_dir,
+                               _ref_path_=args.reference,
                                _assemble_kmer_size_=args.assemble_kmer, _assemble_thread_=args.assemble_thread,
                                _ref_reverse_complement_=True, _pos_=True,
                                _change_seed_=args.change_seed, _kmer_limit_count_=args.kmer_limit,
                                _min_percent_length_=args.minimum_length_ratio,
                                _max_percent_length_=args.maximum_length_ratio,
                                _iteration_=1000)
-    # out_dir = "/Users/zzhen/Desktop/result"
-    # reads_dir = "reads"
-    # re_assemble_dir = "re-assemble"
-    # if not os.path.isdir(os.path.join(out_dir, reads_dir)):
-    #     os.makedirs(os.path.join(out_dir, reads_dir))
-    # if not os.path.isdir(os.path.join(out_dir, re_assemble_dir)):
-    #     os.makedirs(os.path.join(out_dir, re_assemble_dir))
-    # # 已经成功组装的基因名
-    # assembled_gene = [i.split(".")[0] for i in os.listdir(os.path.join(out_dir, "contig")) if i.endswith(".fasta")]
-    # for i in os.listdir(out_dir):
-    #     path = os.path.join(out_dir, i)
-    #     if os.path.isfile(path) and path.endswith(".fasta"):
-    #         if i.split(".")[0] in assembled_gene:
-    #             shutil.move(path, os.path.join(out_dir, reads_dir, i))
-    #         else:
-    #             shutil.move(path, os.path.join(out_dir, re_assemble_dir, i))
-    # print("Done!")
+
+
+if __name__ == "__main__":
+    main()

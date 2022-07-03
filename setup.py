@@ -60,16 +60,18 @@ setup(
     name="Easy353",
     version="1.5.0",
     author="zzhen",
-    author_email="zzhen0302@gmail.com",
+    author_email="zzhen0302@163.com",
     description="""a tool for recovering the Angiosperms353 gene set(AGS), 
                    which can filter and de novo assemble reads from sequencing data,
                    helping users capture AGS accurately and effectively.""",
     license="MIT License",
     # 项目主页
     url="https://github.com/plant720/Easy353",
-    python_requires='>=3.8',
-    packages=["src"],
+    python_requires='>=3.7',
     install_requires=install_dependencies,
     scripts=script_to_install,
-    include_package_data=True
+    package=["Easy353Lib"],
+    package_data={'Easy353Lib': ["Easy353Lib/kew_data.csv", "Easy353Lib/classification.json", "Easy353Lib/genes.csv"]},
+    include_package_data=True,
+    zip_safe=False
 )

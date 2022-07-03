@@ -18,7 +18,7 @@ from functools import partial
 import psutil
 import argparse
 # import my python file
-from src.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, \
+from Easy353Lib.utils import bytes_str, reverse_complement_limit, make_ref_kmer_dict, get_file_size, get_ref_info, \
     get_reads_info, log
 
 
