@@ -49,25 +49,25 @@ wget https://github.com/plant720/Easy353Test/blob/master/data/Gmax_sim_100_sec.f
 
 ### Easy353-cmd
 
-* After installation of Easy353 and download the simulation data of *Glycine max*, please download the AGS of related species as the reference
+* After installation of Easy353 and downloading the simulation data of *Glycine max*, please download the AGS of related species as the reference
 
 ```shell
-# download the AGS according to taxonomy: Glycine_max is one species of Fabaceae family
-# The ref can be found at ref/353gene
+# download the AGS according to taxonomy: Glycine_max is one species of the Fabaceae family
+# The ref can be found at 353_ref_Fabaceae/353gene
 build_database.py -o 353_ref_Fabaceae -c Fabaceae -t 10 -exclude Glycine_max -generate 
 ```
 
-* then do the recover of  Angiosperms353 gene set(AGS)
+* then do the recovery of Angiosperms353 gene set(AGS)
 
 ```shell
-easy353.py -1 Gmax_sim_100_fir.fastq.gz -2 Gmax_sim_100_sec.fastq.gz -r 353_ref_Fabaceae -o test_package -k1 31 -k2 41 -t1 4 -t2 4 -fast
+easy353.py -1 Gmax_sim_100_fir.fastq.gz -2 Gmax_sim_100_sec.fastq.gz -r 353_ref_Fabaceae/353gene -o test_package -k1 31 -k2 41 -t1 4 -t2 4 -fast
 ```
 
 You are going to get the same result as [here](https://github.com/plant720/Easy353Test/tree/master/result/Gmax_100_result).
 
 ### Easy353-GUI
 
-* For Easy353-GUI, you should set the `Paired fq file 1`, `Paired fq file 2`,`Taxonomy` and `Output dir` as shown in the image below
+* For Easy353-GUI, you should set the `Paired fq file 1`, `Paired fq file 2`, `Taxonomy` and, `Output dir` as shown in the image below
 
 ![image-20220629211901122](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220629211901.png)
 
