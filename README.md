@@ -38,6 +38,15 @@ python setup.py install --user
 
 Using the setup.py, you should have Python library setuptools installed (`sudo apt install -y python-setuptools` or `sudo yum install -y python-setuptools`or `pip install setuptools`).
 
+For some Linux nad macOS systems, after above commands you still cannot execute `build_database.py` and `easy353.py` in a new terminal directly, meaning `~/.local/bin` was not added to the \$PATH, you have to manually add `~/.local/bin` :
+
+```shell
+# add ~/.local/bin to PATH
+echo "PATH=~/.local/bin:\$PATH" >> ~/.bashrc
+```
+
+
+
 ## Test
 
 * Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/data):

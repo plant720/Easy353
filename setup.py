@@ -54,6 +54,8 @@ sys.stdout.write("Python " + str(sys.version).replace("\n", " ") + "\n")
 sys.stdout.write("PLATFORM: " + " ".join(platform.uname()) + "\n")
 sys.stdout.write("Using setuptools " + str(setuptools.__version__) + "\n")
 
+scripts_to_install = ["easy353.py", "build_database.py"]
+
 setup(
     name="Easy353",
     version="1.5.0",
@@ -67,12 +69,7 @@ setup(
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.7',
     install_requires=install_dependencies,
-    entry_points={
-        'console_scripts': [
-            'easy353 = easy353:main',
-            'build_reference = build_database:main',
-        ],
-    },
+    scripts=scripts_to_install,
     packages=["Easy353Lib"],
     package_data={'Easy353Lib': ["Easy353Lib/kew_data.csv", "Easy353Lib/classification.json", "Easy353Lib/genes.csv"]},
     include_package_data=True,

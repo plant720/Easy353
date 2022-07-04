@@ -9,8 +9,6 @@
 import argparse
 import os
 import sys
-from shutil import move
-import Easy353Lib
 from Easy353Lib import assemble, filter
 
 
