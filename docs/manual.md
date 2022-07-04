@@ -44,8 +44,6 @@ There are several generally 2 ways to install Easy353-cmd:
 
 #### Option 1. Using conda
 
-
-
 #### Option 2. Using the setup.py
 
 You should use git to download the entire Easy353 repository and install the Easy353 using the setup.py.
@@ -58,13 +56,13 @@ cd Easy353
 python setup.py install --user
 ```
 
-Using the setup.py, you should have Python library setuptools installed (`sudo apt install -y python-setuptools` or `sudo yum install -y python-setuptools`or `pip install setuptools`).
+Using the setup.py, **you should have Python library setuptools installed** (`sudo apt install -y python-setuptools` or `sudo yum install -y python-setuptools`or `pip install setuptools`).
 
 ## 5. Input File Format
 
 ### 5.1 Reads Files
 
-Reads files即通过二代测序获得的以fastq格式存储的测序数据。
+Easy353 assembles any High-throughput Sequencing(HTS) reads, given in the **FASTQ** format. Paired or unpaired reads are OK. And Easy353 can direclty read files compressed with gzip. Compressed files should end with `.gz`.
 
 ```txt
 @ST-E00600:58:HKYNGALXX:1:1101:1434:1000 1:N:0:GAGTTCGA
@@ -75,9 +73,9 @@ AAFFFJJJJJJJJJJJJJJJJJJJJJJJJJ7JJJJJJJJJJJJJJJJJJJJJJJJ7JJJJJJJJJJJJJJJJJJJJJJJJ
 
 ### 5.2 Reference files
 
-参考序列是以fasta格式存储DNA序列的文本文件。每个参考文件包含一个以上的DNA序列——来自近源物种的同源基因。
+DNA sequences are stored in reference files in **FASTA** format. Each reference file contains one or more DNA sequence,which is the homologous gene from closely related species. Here we provide an example: https://github.com/plant720/Easy353Test/tree/master/data
 
-每个序列的ID应该包括物种名和基因名，用`_`字符分开。示例如下：
+Each sequence's ID should contain the gene name and species name, separated by the `_`.
 
 ```
 >Litchi_chinensis_6946
@@ -88,89 +86,33 @@ GGAAGACATAGGTGGGTTGAATATGCAGAGAAAGGTCGCTACAATGCCTCTCAGGTGCCTCCGGAATGGCATGGTTGGCT
 
 ## 6. Parameters
 
-The most 
+### 6.1 Parameters to be specified
 
-
-
-### 6.1 Basic parameters
-
-The following options need to be specified, in the following order:
+The following options need to be specified:
 
 * `fq_file_1` and `fq_file_2`: The input files with paired-end reads, given in FASTQ format. 
 * `unpaired_fq_file`: The input file with unpaired-end reads.
 
-* `reference`: The file or 
-* `output_dir`: Output directory
+* `reference`:  A directory recording 353 gene sequences from closely related species, given in FASTA format. 
+* `output_dir`: The output directory. 
 
-### 6.2 General parameters
+### 6.2 Parameters with default value
 
-The following option 
+The following options have default values and do not need to be specified in general.
 
-* `filter_kmer`:
-* `assemble_kmer`:
-* `filter_thread`
-* `assemble_thread`
-
-### 6.3 Advanced parameters
+* `filter_kmer`: K-mer length setting for filtering, default value is 31. The `filter_kmer` is the length of the shared DNA segment between the reads and the reference sequences.  Easy353 looks for a shared K-length DNA segment (K-mer) between a read and a reference to assess whether they are related. Consequently, when the value of  `filter kmer` is set to 31, it means to search for reads that have 31bp in common with  the reference sequence.
+* `assemble_kmer`: K-mer length setting for assembly, default value is 41.  The `assemble_kmer` is the length of the nodes in the de Bruijn graph (DBG). In reads assembly, the filtered reads are divided into K-mers; the k-mers are employed as the nodes of the DBG. It strongly depends on the input dataset. For Illumina reads(150bp) with sufficient coverage (> 40x), we have good results with k = 41.
+* `kmer_limit`: Limit of K-mer count, default value is 2. The`kmer_limit` is used to remove erroneous, low-abundance K-mers. This parameter also strongly depends on the dataset. It corresponds to the smallest amount of times a correct k-mer appears in the reads. A typical value is 2, which means only K-mers with at least 3 occurrences will be used for assembly.  If the dataset has high coverage, try larger values.
+* `filter_thread`: Threads setting for reads filtering, defalut value is 1. This value is advised to ideally not exceed 4. And for Windows and macOS, the `filter thread` should be set to 1.
+* `assemble_thread`: Threads setting for reads assembly, defalut value is 4. 
+* `reference_number`: The number of the reference sequences used to build hash table, and the full reference sequence will be used by default. When one target gene has more than 100 homologous reference sequences, we advise setting this `reference_number` to 100 since the amount of sequences in the fasta file will effect the memory size needed by Easy353.
+* `fast`: Whether to use fast mode. 
 
 * `step_length`
-* `ref_number`
 * `change_seed`
-* `kmer_limit`
-* `minimum_length_ratio`
+* `minimum_length_ratio`: The minimum ratio of the assembled gene length to reference average length, default value is 1.0. 
 * `maximum_length_ration`
-* `reference_number`
-* `fast`
-
-
 
 ## 7. Output
 
-## Running the pipeline
-
-### 程序文件构成
-
->  程序主要是由 main.py util.py filter.py assembly.py 等文件构成
-
-* `main.py`:软件运行的主程序。通过`python main.py -h`可以查看程序的参数
-
-  ![image-20220522171614490](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220627154911.png)
-
-* `filter.py`:用于从测序数据过滤与目标基因相关的reads
-
-* `assembly.oy`:用于组装过滤出的reads
-
-* `utils.py`:存放`filter.py`和`assembly.py`通用的函数
-
-### 运行示例
-
-以拟南芥*Arabidopsis thaliana*的转录组测序作为测序数据，十字花科被子植物353基因的fasta文件作为参考文件。其中十字花科被子植物353基因从是从https://treeoflife.kew.org下载并处理得到的。
-
-```shell
-python easy353.py -1 SRR18391637.sra_1.fastq -2 SRR18391637.sra_2.fastq -r ref_Brassicaceae -o result -k1 31 -k2 41
-```
-
-```shell
-# 参数解释
--1 -2: 二代测序的双端测序数据
--r: 参考序列文件。当需要捕获多个基因时，需要将不同基因的参考序列文件存放在文件夹中，并给出文件夹路径；当只需要筛选单个基因时，只需给出单个文件路径即可
--o: 指定输出文件夹名
--k1: 用于过滤测序数据的k值
--k2: 用于组装读长时的k值
-```
-
-### 输出文件
-
-> 输出文件夹主要包括reads、contig、scaffold、big_reads 、short_contig等文件夹及assembly_log.txt、filter_log.txt及result_log.txt等文件
-
-* contig:用于存放contig的文件夹。该文件夹中的不同文件是根据不同基因的参考文件过滤出的reads组装出的最优单一contig。当组装出的contig长度较长，可作为捕获出的目标基因使用。contig文件中的contig长度在目标基因平均长度的100%-200%。
-* short_contig:当组装出的contig长度没有达到目标基因长度的50%，会被放入short_contig文件夹中。
-* scaffold:存放scaffold文件，scaffold是使用filtered reads组装出的多条contig，根据在参考序列中的相对位置和方法连接得到的。
-* reads:存放测序数据中与目标基因参考序列局部相似的reads。
-* big_reads:当单一基因通过过滤得到的reads数量过多时，存入big_reads文件夹，通过扩大k值再次进行过滤。
-
-> 一般来说，当拼接得到的contig数量较多、长度较长时，可以采用contig文件夹中的contig作为目标基因使用。当组装得到的contig长度较短，可以考虑采用scafflod中得到的结果进行使用，但是因为间隙（gap）的存在，需要进行修剪才可使用。
-
-* filter_log.txt:记录从测序数据中过滤reads的信息，主要包括过滤基因名、过滤出的reads数量、目标基因平均长度、覆盖度和K值
-* assembly_log.txt:存放组装reads过程中的信息，主要包括组装基因名、组装出的contig长度、目标基因平均长度、组装过程中的seed、K值
-* result_lof.txt:存放程序运行的结果信息，主要包括基因名、目标基因长度、过滤出的reads数量、contig长度、scaffold长度等
+containing the `filtered_reads`  and the `target_genes` . The directory, `filtered_reads`, contains filtered reads associated with target 353 genes. And the directory, `target_genes`, is the most important result directory of Easy353, which stores 353 gene sequences recovered by easy353.

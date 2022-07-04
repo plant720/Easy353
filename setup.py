@@ -22,8 +22,6 @@ import sys
 import setuptools
 from setuptools import setup
 
-script_to_install = ["easy353.py", "build_database.py", "script/compare.py"]
-
 # python libs
 install_dependencies = []
 try:
@@ -69,7 +67,12 @@ setup(
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.7',
     install_requires=install_dependencies,
-    scripts=script_to_install,
+    entry_points={
+        'console_scripts': [
+            'easy353 = easy353:main',
+            'build_reference = build_database:main',
+        ],
+    },
     packages=["Easy353Lib"],
     package_data={'Easy353Lib': ["Easy353Lib/kew_data.csv", "Easy353Lib/classification.json", "Easy353Lib/genes.csv"]},
     include_package_data=True,

@@ -8,24 +8,23 @@
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import argparse
 import os
+import sys
 from shutil import move
 import Easy353Lib
 from Easy353Lib import assemble, filter
 
 
-# 参数初始化
-def args_init():
+def main():
     pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, usage="%(prog)s [options]",
                                    description="Easy353 zzhen@sculab")
     pars.add_argument("-1", dest="fq_file_1", type=str, nargs="+",
-                      help="Input file(s) with forward paired-end reads (*.fq/.gz/.tar.gz).", required=False)
+                      help="Input file(s) with forward paired-end reads (*.fq/.gz/.tar.gz).")
     pars.add_argument("-2", dest="fq_file_2", type=str, nargs="+",
-                      help="Input file(s) with reverse paired-end reads (*.fq/.gz/.tar.gz).", required=False)
+                      help="Input file(s) with reverse paired-end reads (*.fq/.gz/.tar.gz).")
     pars.add_argument("-u", dest="unpaired_fq_file", type=str,
-                      help="Input file(s) with unpaired (single-end) reads.", required=False, nargs="+")
-    pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references.", required=True)
-    pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", required=False,
-                      default="easy353_output")
+                      help="Input file(s) with unpaired (single-end) reads.", nargs="+")
+    pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references.")
+    pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", default="easy353_output")
     pars.add_argument("-k1", dest="filter_kmer", type=int, help="Kmer setting for filtering reads. Default:31",
                       default=31)
     pars.add_argument("-k2", dest="assemble_kmer", type=int, help="Kmer setting for assembling reads. Default:41",
@@ -33,7 +32,7 @@ def args_init():
     pars.add_argument("-s", dest="step_length", type=int,
                       help="Step length of the sliding window on the reads. Default:1", default=1)
     pars.add_argument("-t1", dest="filter_thread", type=int,
-                      help="Threads setting for filtering reads. Default:4", default=4)
+                      help="Threads setting for filtering reads. Default:4", default=1)
     pars.add_argument("-t2", dest="assemble_thread", type=int,
                       help="Threads setting for assembling reads. Default:4", default=4)
     pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:2", default=2)
@@ -49,11 +48,8 @@ def args_init():
                       help="The number of the reference sequences used to build hash table. Default:all", default=None)
     pars.add_argument("-fast", dest="fast", action="store_true", help="Whether to use fast mode.")
     args = pars.parse_args()
-    return args
-
-
-def main():
-    args = args_init()
+    if len(sys.argv) <= 2:
+        pars.print_help()
     fastq_files = tuple()
     _paired_reads_ = False
     if args.unpaired_fq_file:
