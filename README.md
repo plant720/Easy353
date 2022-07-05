@@ -16,15 +16,10 @@ It is advised to get Easy353-GUI from https://github.com/plant720/Easy353/releas
 
 There are several generally 2 ways to install Easy353:
 
-* Option 1 **Using conda**
+- Option 1 **Using the setup.py**
+- Option 2 **In situ configuration**
 
-- Option 2 **Using the setup.py**
-
-#### Option 1. Using conda
-
-
-
-#### Option 2. Using the setup.py
+#### Option 1. Using the setup.py
 
 You should use git to download the entire Easy353 repository and install the Easy353 using the setup.py.
 
@@ -43,6 +38,38 @@ For some Linux nad macOS systems, after above commands you still cannot execute 
 ```shell
 # add ~/.local/bin to PATH
 echo "PATH=~/.local/bin:\$PATH" >> ~/.bashrc
+```
+
+#### Option 2. In situ configuration
+
+Use git to download the entire Easy353 repository.
+
+```shell
+# Supposing you are going to install it at ~/Applications
+mkdir ~/Applications # create directories if not existed
+cd ~/Applications
+git clone https://github.com/plant720/Easy353.git
+```
+
+Use following commands to make Easy353 scripts executable
+
+```shell
+chmod 755 Easy353/build_database.py
+chmod 755 Easy353/easy353.py
+```
+
+Add Easy353 to the $PATH.
+
+```shell
+echo "export PATH=~/Applications/Easy353:\$PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+At last, install python libraries biopython,psutil, requests, and beautifulsoup4 using pip or conda.
+
+```shell
+# install required libs
+pip install biopython psutil requests beautifulsoup4
 ```
 
 ## Test

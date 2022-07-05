@@ -136,7 +136,7 @@ def window_init():
 
         # reverse_complement
         [sg.Text('Ref reverse complement', size=(17, 1), justification='center', font=("Consolas", 13)),
-         sg.Checkbox(text="", default=True,
+         sg.Checkbox(text="", default=False,
                      key='-reverse_complement-', size=(8, 1), font=("Consolas", 13), )]
     ]
 
@@ -503,7 +503,7 @@ def easy353_gui():
             window['-kmer_limit-'].update(2)
             window['-minimum_length_ratio-'].update(1.0)
             window['-maximum_length_ratio-'].update(2.0)
-            window['-reverse_complement-'].update(True)
+            window['-reverse_complement-'].update(False)
 
             fastq_files, _paired_reads_ = tuple(), False
             fq_file_1, fq_file_2, unpaired_fq_file, output_dir = None, None, None, None

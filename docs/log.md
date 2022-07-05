@@ -21,7 +21,8 @@ fix bug: assemble报错
 fix bug: 修改输出文件结构
 
 ## 2022.6.7 1.2.0
-function add: 增加输出结果的统计信息
+function add: 增加输出结果的统计信息 
+
 fix bug: 解决组装结果报错的问题
 
 ## 2022.6.20 1.3.0
@@ -29,12 +30,13 @@ fix bug: 解决组装结果报错的问题
 function add: 增加图形界面
 
 ## 2022.6.22 1.4.0
-
 fix bug: 修改界面布局和设置
 
 ## 2022.6.27 1.5.0
-
 fix bug: 解决图形界面运行长时间任务界面无响应的问题
 
 function add: 添加图形界面的线程功能
+
+## 2022.7.1 1.6.0
+function add: 允许以打包形式发布，处理setup.py
 

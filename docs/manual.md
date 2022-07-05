@@ -38,13 +38,10 @@ You can download Easy353-GUI from https://github.com/plant720/Easy353/release an
 
 There are several generally 2 ways to install Easy353-cmd:
 
-* Option 1 **Using conda**
+- Option 1 **Using the setup.py**
+- Option 2 **In situ configuration**
 
-- Option 2 **Using the setup.py**
-
-#### Option 1. Using conda
-
-#### Option 2. Using the setup.py
+#### Option 1. Using the setup.py
 
 You should use git to download the entire Easy353 repository and install the Easy353 using the setup.py.
 
@@ -57,6 +54,46 @@ python setup.py install --user
 ```
 
 Using the setup.py, **you should have Python library setuptools installed** (`sudo apt install -y python-setuptools` or `sudo yum install -y python-setuptools`or `pip install setuptools`).
+
+For some Linux nad macOS systems, after above commands you still cannot execute `build_database.py` and `easy353.py` in a new terminal directly, meaning `~/.local/bin` was not added to the \$PATH, you have to manually add `~/.local/bin` :
+
+```shell
+# add ~/.local/bin to PATH
+echo "export PATH=~/.local/bin:\$PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+#### Option 2. In situ configuration
+
+Use git to download the entire Easy353 repository.
+
+```shell
+# Supposing you are going to install it at ~/Applications
+mkdir ~/Applications # create directories if not existed
+cd ~/Applications
+git clone https://github.com/plant720/Easy353.git
+```
+
+Use following commands to make Easy353 scripts executable
+
+```shell
+chmod 755 Easy353/build_database.py
+chmod 755 Easy353/easy353.py
+```
+
+Add Easy353 to the $PATH.
+
+```shell
+echo "export PATH=~/Applications/Easy353:\$PATH" >> ~/.bashrc
+source ~/.bashrc
+```
+
+At last, install python libraries biopython,psutil, requests, and beautifulsoup4 using pip or conda.
+
+```shell
+# install required libs
+pip install biopython psutil requests beautifulsoup4
+```
 
 ## 5. Input File Format
 
@@ -86,6 +123,50 @@ GGAAGACATAGGTGGGTTGAATATGCAGAGAAAGGTCGCTACAATGCCTCTCAGGTGCCTCCGGAATGGCATGGTTGGCT
 
 ## 6. Parameters
 
+One of most important command is the Easy353 help option that displays all options. You can get on-line help type: `easy353.py -h`,
+
+and you will get the following, very long listing, that will be discussed at length below:
+
+```
+usage: easy353.py [options]
+
+Easy353 zzhen@sculab
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -1 FQ_FILE_1 [FQ_FILE_1 ...]
+                        Input file(s) with forward paired-end reads
+                        (*.fq/.gz/.tar.gz).
+  -2 FQ_FILE_2 [FQ_FILE_2 ...]
+                        Input file(s) with reverse paired-end reads
+                        (*.fq/.gz/.tar.gz).
+  -u UNPAIRED_FQ_FILE [UNPAIRED_FQ_FILE ...]
+                        Input file(s) with unpaired (single-end) reads.
+  -r REFERENCE          Input a file(directory) with references.
+  -o OUTPUT_DIR         Output directory.
+  -k1 FILTER_KMER       Kmer setting for filtering reads. Default:31
+  -k2 ASSEMBLE_KMER     Kmer setting for assembling reads. Default:41
+  -s STEP_LENGTH        Step length of the sliding window on the reads.
+                        Default:1
+  -t1 FILTER_THREAD     Threads setting for filtering reads. Default:4
+  -t2 ASSEMBLE_THREAD   Threads setting for assembling reads. Default:4
+  -kmer_limit KMER_LIMIT
+                        Limit of kmer count. Default:2
+  -f FUNCTION_MODE      0:all,1:filter,2:assemble. Default:0
+  -min MINIMUM_LENGTH_RATIO
+                        The minimum ratio of contig length to reference
+                        average length. Default:1.0
+  -max MAXIMUM_LENGTH_RATIO
+                        The maximum ratio of contig length to reference
+                        average length. Default:2.0
+  -change_seed CHANGE_SEED
+                        Times of changing seed. Default:32
+  -reference_number REFERENCE_NUMBER
+                        The number of the reference sequences used to build
+                        hash table. Default:all
+  -fast                 Whether to use fast mode.
+```
+
 ### 6.1 Parameters to be specified
 
 The following options need to be specified:
@@ -106,13 +187,51 @@ The following options have default values and do not need to be specified in gen
 * `filter_thread`: Threads setting for reads filtering, defalut value is 1. This value is advised to ideally not exceed 4. And for Windows and macOS, the `filter thread` should be set to 1.
 * `assemble_thread`: Threads setting for reads assembly, defalut value is 4. 
 * `reference_number`: The number of the reference sequences used to build hash table, and the full reference sequence will be used by default. When one target gene has more than 100 homologous reference sequences, we advise setting this `reference_number` to 100 since the amount of sequences in the fasta file will effect the memory size needed by Easy353.
-* `fast`: Whether to use fast mode. 
-
-* `step_length`
-* `change_seed`
-* `minimum_length_ratio`: The minimum ratio of the assembled gene length to reference average length, default value is 1.0. 
-* `maximum_length_ration`
+* `fast`: The switch to control fast mode. If typing `-fast` in command line, Easy353 will run faster, but will use nearly twice as much memory. 
+* `step_length`: The length of the interval when splitting the reads into K-mer, default value is 1. With a sequence is AGTTACGTCA, when `step_length` is 1 and `kmer_size` is 5,  we can get  AGTTA, GTTAC, TTACG, TACGT, ACGTC and CGTCA; when `step_length`is 2, we will get AGTTA, TTACG, ACGTC. This parameter can be used to reduce the program runtime when the dataset is large with sufficient coverage.
+* `change_seed`: The setting for the number of seed changes, default value is 32. Actually, `change seed` is the amount of times the assembly's  beginning point can be changed. The seeds are high-abundance K-mers selected from filtered reads that serve as the beginning point for de novo assembly. When the assembled gene's length is less than the set value, Easy353 will alter the assembly beginning point.
+* `minimum_length_ratio`: The minimum ratio of recovered gene’s length to reference gene’s average length, default value is 1.0. Easy353 will decide that the gene recovery has failed when the actual length ratio is less than this value.
+* `maximum_length_ratio`: The maximum ratio of recovered gene’s length to reference gene’s average length, default value is 2.0. When the actual assembled gene’s length is longer, Easy353 will use stronger limitations, such as higher `assemble_kmer` and  `kmer_limit`.
 
 ## 7. Output
 
-containing the `filtered_reads`  and the `target_genes` . The directory, `filtered_reads`, contains filtered reads associated with target 353 genes. And the directory, `target_genes`, is the most important result directory of Easy353, which stores 353 gene sequences recovered by easy353.
+The output directory contains the `filtered_reads` and the `target_genes` . 
+
+* The directory, `filtered_reads`, contains filtered reads associated with target 353 genes. 
+* And the directory, `target_genes`, is the most important result directory of Easy353, which stores 353 gene sequences recovered by Easy353. 
+  * The files under `target_genes` are recovered successfully, and the `unrecovered_genes` directory contains 353 genes that were not recovered successfully, because the recovered genes are shorter in length.
+
+## 8. Example
+
+* Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/data):
+
+```shell
+wget https://github.com/plant720/Easy353Test/raw/master/data/Gmax_sim_1.fastq.gz
+wget https://github.com/plant720/Easy353Test/raw/master/data/Gmax_sim_2.fastq.gz
+```
+
+* After installation of Easy353 and downloading the simulation data of *Glycine max*, please download the AGS of related species as the reference
+
+```shell
+# Download the AGS data according to taxonomy: Glycine max is a species from Glycine genus in Fabaceae, so we download species from Fabaceae as the reference.
+# The reference sequences are downloaded from https://treeoflife.kew.org/,so keep your devices connected to the network. And if you the build_database.py, please cite: https://doi.org/10.1093/sysbio/syab035.
+build_database.py -o 353_ref_Fabaceae -c Fabaceae -t 10 -exclude Glycine_max -generate 
+# The final reference sequences can be found at 353_ref_Fabaceae/353gene after downloading
+
+## Explanation of parameters
+-o: the output directroy
+-c: the taxonomy of species that used as reference
+-t: the thread used to download files
+-exclude: exclud species that are not used as reference
+-generate: generate a csv that records the info of downloaded species
+```
+
+* Then do the recovery of Angiosperms353 gene set(AGS)
+
+```shell
+# use easy353.py to filter and assemble reads to get target genes
+easy353.py -1 Gmax_sim_1.fastq.gz -2 Gmax_sim_2.fastq.gz -r 353_ref_Fabaceae/353gene -o test_package -k1 31 -k2 41 -t1 1 -t2 4 -reference_number 100
+```
+
+* Now, you can view the result of Easy353 in output directory
+
