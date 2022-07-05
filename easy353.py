@@ -48,6 +48,7 @@ def main():
     args = pars.parse_args()
     if len(sys.argv) <= 2:
         pars.print_help()
+        sys.exit(0)
     fastq_files = tuple()
     _paired_reads_ = False
     if args.unpaired_fq_file:
