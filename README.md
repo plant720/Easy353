@@ -45,8 +45,6 @@ For some Linux nad macOS systems, after above commands you still cannot execute 
 echo "PATH=~/.local/bin:\$PATH" >> ~/.bashrc
 ```
 
-
-
 ## Test
 
 * Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/data):

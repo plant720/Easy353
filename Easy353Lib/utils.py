@@ -7,6 +7,7 @@
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import os
+import random
 import sys
 import glob
 import psutil
@@ -181,7 +182,7 @@ def get_ref_info(reference_path: str) -> tuple:
 # _ref_reverse_complement_会影响建立的哈西字典的大小
 # 如果要节约内存，将_ref_reverse_complement_设置为False,那么在过滤测序数据时，需要对read进行reverse complement
 def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_complement_: bool = False,
-                       _pos_: bool = True, _print_: bool = True, ref_number: int = None) -> dict:
+                       _pos_: bool = True, _print_: bool = True, ref_number: int = None, random_seed: int = 10) -> dict:
     # 从reference文件中获取文件路径列表
     files_list = get_file_list(reference_path)
     if not files_list:
@@ -190,10 +191,17 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
     ref_kmer_dict = defaultdict(list)
     gene_number_count = 0
     for file in files_list:
-        # 用于记录每个基因的序列数量
-        ref_count = 0
         infile = open(file, 'r', encoding='utf-8', errors='ignore')
         file_name_gene = os.path.basename(file).split(".")[0]
+        seq_total, need_to_read, ref_count = 0, None, 0
+        if ref_number is not None:
+            # 获取该文件中序列的总条数
+            seq_total = infile.read().count('>')
+            if seq_total <= ref_number:
+                need_to_read = range(1, seq_total + 1)
+            else:
+                random.seed(random_seed)
+                need_to_read = random.sample(range(1, seq_total + 1), ref_number)
         # 跳过第一行>
         infile.readline()
         for line in infile:
@@ -205,7 +213,11 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
             # 设定单个参考基因的最大序列数量
             ref_count += 1
             if ref_number is not None:
-                if ref_count >= ref_number:
+                if ref_count not in need_to_read:
+                    continue
+                else:
+                    need_to_read.remove(ref_count)
+                if len(need_to_read) == 0:
                     break
             # 保留seq序列中的数字和字母 去除换行符
             ref_seq = ''.join(filter(str.isalnum, ''.join(temp_str).upper()))

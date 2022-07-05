@@ -91,6 +91,8 @@ def download_fasta_file(_spec_info_: dict, output_dir: str):
             urlretrieve(url, file_path)
         except HTTPError:
             info = "INFO: Url {} does not exist".format(url)
+        except Exception as e:
+            info = "ERROR: {}".format(e)
     return info
 
 
@@ -194,9 +196,8 @@ def main():
             # 对于多参数函数，如果我们只想对它的一个参数在多进程任务中依次取可迭代对象中各个值，其他参数固定，
             # 可以使用偏函数构造出单参数函数 一般来说必须采用关键字参数的形式给构建出的偏函数传参，因为如果以无关键字参数的方式，该实参将试图传递给第一个形参
             # http://c.biancheng.net/view/5674.html
-            futures = [executor.submit(partial(download_fasta_file, output_dir=output_dir), _spec_info_) for _spec_info_
-                       in
-                       down_spec_info]
+            futures = [executor.submit(partial(download_fasta_file, output_dir=output_dir), _spec_info_)
+                       for _spec_info_ in down_spec_info]
             for future in as_completed(futures):
                 if future.result() is not None:
                     print(future.result())
