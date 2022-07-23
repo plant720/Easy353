@@ -262,7 +262,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     gene_info = {"assemble_success_flag": assemble_success_flag, "target_gene_length": 0, "unrecovered_gene_length": 0,
                  "filter_reads_count": 0, "kmer_usage_rate": 0,
                  "seed": "", "assemble_kmer_size": _assemble_kmer_size_,
-                 "kmer_limit": _kmer_limit_count_, "contig_coverage_depth": 0}
+                 "kmer_limit": _kmer_limit_count_, "contig_coverage_depth": 0, "ref_avg_length": gene_avg_len}
     # read 产生的Kmer总数和不同种类Kmer的数量
     # ref_seq 产生的Kmer总数和不同种类Kmer的数量
     assemble_gene_info_dict[gene_name] = gene_info
@@ -411,8 +411,9 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             print("Assemble {} gene succeed. Ref length: {}, best contig length: {}.".format
                   (gene_name, gene_avg_len, len(best_contig)))
         with open(_contig_path_, 'w') as out:
-            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_recovered_k' + str(_assemble_kmer_size_) +
-                      "_" + str(len(best_contig)) + '\n')
+            out.write(
+                '>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_recovered_k' + str(_assemble_kmer_size_) +
+                "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     else:
         if _print_:
@@ -487,11 +488,12 @@ def assemble_flow(_input_read_path_: str, _out_dir_: str, _ref_path_: str, _asse
     print("Assemble Done! {} / {} succeed".format(assemble_flag_list.count(True), len(assemble_flag_list)))
     # 输出log信息
     log_file = os.path.join(assemble_out_dir, "assemble_log.csv")
-    log(log_file, "gene_id", "target_gene_length", "unrecovered_gene_length", "contig_coverage_depth",
+    log(log_file, "gene_id", "ref_avg_length", "target_gene_length", "unrecovered_gene_length", "contig_coverage_depth",
         "assemble_kmer", "assemble_seed", "kmer_limit", "filter_reads_count",
         "kmer_usage_rate")
     for gene_name, gene_info in assemble_gene_info_dict.items():
-        log(log_file, gene_name, gene_info["target_gene_length"], gene_info["unrecovered_gene_length"],
+        log(log_file, gene_name, gene_info["ref_avg_length"], gene_info["target_gene_length"],
+            gene_info["unrecovered_gene_length"],
             gene_info["contig_coverage_depth"], gene_info["assemble_kmer_size"],
             gene_info["seed"], gene_info["kmer_limit"], gene_info["filter_reads_count"],
             gene_info["kmer_usage_rate"])

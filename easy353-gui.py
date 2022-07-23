@@ -186,6 +186,8 @@ def download_files(_spec_info_: dict, output_dir: str):
             urlretrieve(url, file_path)
         except HTTPError:
             info = "INFO: Url {} does not exist".format(url)
+        except Exception as e:
+            info = "ERROR: {}".format(e)
     return info
 
 

@@ -24,7 +24,7 @@ def main():
     pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references.")
     pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", default="easy353_output")
     pars.add_argument("-k1", dest="filter_kmer", type=int, help="Kmer setting for filtering reads. Default:31",
-                      default=31)
+                      default=29)
     pars.add_argument("-k2", dest="assemble_kmer", type=int, help="Kmer setting for assembling reads. Default:41",
                       default=41)
     pars.add_argument("-s", dest="step_length", type=int,
@@ -33,7 +33,7 @@ def main():
                       help="Threads setting for filtering reads. Default:4", default=1)
     pars.add_argument("-t2", dest="assemble_thread", type=int,
                       help="Threads setting for assembling reads. Default:4", default=4)
-    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:2", default=2)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:2", default=8)
     pars.add_argument("-f", dest="function_mode", type=int, help="0:all,1:filter,2:assemble. Default:0", default=0)
     pars.add_argument("-min", dest="minimum_length_ratio", type=float,
                       help="The minimum ratio of contig length to reference average length. Default:1.0", default=1.0)

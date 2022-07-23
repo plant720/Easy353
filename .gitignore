@@ -140,5 +140,7 @@ cython_debug/
 
 # Easy353
 .idea/
+easy353-gui.py
+icon*
 
 
