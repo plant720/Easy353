@@ -139,7 +139,7 @@ Please use the Easy353-gui.app or Easy353-gui.exe from https://github.com/plant7
 
 ## User manual
 
-A more complete manual is here: https://github.com/plant720/Easy353/docs/manual.pdf
+A more complete manual is here: https://github.com/plant720/Easy353/blob/master/docs/manual.pdf
 
 ## Contact
 
