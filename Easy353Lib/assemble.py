@@ -412,7 +412,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
                   (gene_name, gene_avg_len, len(best_contig)))
         with open(_contig_path_, 'w') as out:
             out.write(
-                '>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_recovered_k' + str(_assemble_kmer_size_) +
+                '>' + _out_dir_.split("/")[-2] + "_" + gene_name + '_recovered_k' + str(_assemble_kmer_size_) +
                 "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
     else:
@@ -420,7 +420,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
             print("Assemble {} gene failed. Ref length: {}, best contig length: {}.".format
                   (gene_name, gene_avg_len, len(best_contig)))
         with open(_short_contig_path_, 'w') as out:
-            out.write('>' + os.path.split(_out_dir_)[-1] + "_" + gene_name + '_unrecovered_k' +
+            out.write('>' + _out_dir_.split("/")[-2] + "_" + gene_name + '_unrecovered_k' +
                       str(_assemble_kmer_size_) + "_" + str(len(best_contig)) + '\n')
             out.write(best_contig + '\n')
 
