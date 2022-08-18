@@ -65,7 +65,6 @@ setup(
                    which can filter and de novo assemble reads from sequencing data,
                    helping users capture AGS accurately and effectively.""",
     license="MIT License",
-    # 项目主页
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.7',
     install_requires=install_dependencies,

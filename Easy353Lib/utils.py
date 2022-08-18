@@ -13,58 +13,13 @@ import glob
 import psutil
 from collections import defaultdict
 
-try:
-    from reprlib import repr
-except ImportError:
-    pass
 
-
-# def total_size(o, handlers=None, verbose=False):
-#     """ Returns the approximate memory footprint an object and all of its contents.
-#     Automatically finds the contents of the following builtin containers and
-#     their subclasses:  tuple, list, deque, dict, set and frozenset.
-#     To search other containers, add handlers to iterate over their contents:
-#         handlers = {SomeContainerClass: iter,
-#                     OtherContainerClass: OtherContainerClass.get_elements}
-#     """
-#     if handlers is None:
-#         handlers = {}
-#     dict_handler = lambda dst: chain.from_iterable(dst.items())
-#     all_handlers = {tuple: iter,
-#                     list: iter,
-#                     deque: iter,
-#                     dict: dict_handler,
-#                     set: iter,
-#                     frozenset: iter,
-#                     }
-#     all_handlers.update(handlers)  # user handlers take precedence
-#     seen = set()  # track which object id's have already been seen
-#     default_size = getsizeof(0)  # estimate sizeof object without __sizeof__
-#
-#     def sizeof(obj):
-#         if id(obj) in seen:  # do not double count the same object
-#             return 0
-#         seen.add(id(obj))
-#         s = getsizeof(obj, default_size)
-#
-#         if verbose:
-#             print(s, type(obj), repr(obj), file=stderr)
-#
-#         for typ, handler in all_handlers.items():
-#             if isinstance(obj, typ):
-#                 s += sum(map(sizeof, handler(obj)))
-#                 break
-#         return s
-#
-#     return sizeof(o)
-
-
-# 反向互补
+# reverse and complement
 def reverse_complement_all(_seq_: str) -> str:
     return _seq_.translate(str.maketrans('ACGTacgtRYMKrymkVBHDvbhd', 'TGCAtgcaYRKMyrkmBVDHbvdh'))[::-1]
 
 
-# 简化反向互补 速度更快
+# Simplifying reverse complement, without considering the concatenated bases
 def reverse_complement_limit(_seq_: str) -> str:
     return _seq_.upper().translate(str.maketrans('ACGT', 'TGCA'))[::-1]
 
@@ -80,7 +35,6 @@ comp_tuple = (
     'p', 'q', 'y', 's', 'a', 'a', 'b', 'w', 'x', 'r', 'z', 123, 124, 125, 126, 127)
 
 
-# 反向互补
 def reverse_complement_ascii(_seq_: str) -> str:
     _seq_ = bytearray(_seq_[::-1], "ascii")
     for char in range(len(_seq_)):
@@ -95,15 +49,15 @@ def log(log_file, *args):
         out.write(str(args[-1]) + '\n')
 
 
-# 用于判断文件后缀名，用于选择具体的读取函数
+# Used to determine the file suffix name, used to select the specific read function
 def judge_type(path):
     suffix_dict = {'.gz': 0, '.fq': 1, '.fastq': 1, 'fa': 2, '.fas': 2, '.fasta': 2}
     # 设定默认值是3
     return suffix_dict.get(os.path.splitext(path)[-1].lower(), 3)
 
 
-# 将字节转为字符串
-# 用于处理open(file,"rb")获取的结果
+# Converting bytes to strings
+# Used to process the result obtained by open(file, "rb")
 def bytes_str(_input_: bytes):
     try:
         return _input_.decode('utf-8')
@@ -111,8 +65,6 @@ def bytes_str(_input_: bytes):
         return _input_
 
 
-# 如果传入的是一个文件夹，则返回该文件夹下的所有文件的文件路径列表
-# 如果传入的是一个文件，则返回只包含该文件路径的列表
 def get_file_list(_file_or_dir_path_: str) -> list:
     # 设置文件拓展名
     extension = (".fasta", ".fas", ".fa", ".fna", ".ffn", ".frn", ".faa", ".fna")
@@ -127,17 +79,16 @@ def get_file_list(_file_or_dir_path_: str) -> list:
     return _file_path_list_
 
 
-# 返回文件大小 以MB为单位
+# get file size: MB
 def get_file_size(file_path: str) -> float:
     fsize = os.path.getsize(file_path)
     fsize = fsize / float(1024 * 1024)
     return round(fsize, 2)
 
 
-# 判断文件中的reads数量及read长度
+#  Determine the number of reads in the file and the length of the read
 def get_reads_info(file_path: str) -> tuple:
     reads_num, reads_len = 0, 0
-    # 读取fasta数据
     with open(file_path, "r") as f:
         for line in f:
             if line.startswith(">"):
@@ -152,38 +103,31 @@ def get_seq_avg_length(file_path: str) -> float:
     return reads_len / reads_num
 
 
-# 用于返回与参考序列相关的信息:
-# 基因名/文件名 与其对应的文件路径
-# 基因名/文件名 与其对应的参考序列的平均长度
-# todo:这一步实际上已经读取了一边参考序列,为了减少操作,可以在make_ref_kmer_dict这一个函数中返回
+# Used to return information related to the reference sequence:
+# Gene name/filename and its corresponding file path
+# The average length of the gene/file name and its corresponding reference sequence
 def get_ref_info(reference_path: str) -> tuple:
-    # 根据reference路径获取_ref_path_list_
     _ref_path_list_ = get_file_list(reference_path)
     if not _ref_path_list_:
         print("Error: reference file is not exist, please check your input.")
         sys.exit(-1)
-    # 记录reference文件的read平均长度
     _ref_length_dict_ = defaultdict(int)
-    # 记录reference文件的路径信息
     _ref_path_dict_ = defaultdict(str)
     for ref_file_path in _ref_path_list_:
         if judge_type(ref_file_path) == 2:
-            # 通过参考文件的文件名来标定不同的参考基因
+            # identify different reference genes by the file name of the reference file
             file_name_gene = os.path.basename(ref_file_path).split('.')[0]
-            # 参考序列的路径字典
+            # Path dictionary for the reference files
             _ref_path_dict_[file_name_gene] = ref_file_path
             ref_seq_count, _ref_length_dict_[file_name_gene] = get_reads_info(ref_file_path)
-            # 计算平均长度
+            # Calculate the average length
             _ref_length_dict_[file_name_gene] = int(_ref_length_dict_[file_name_gene] / max(ref_seq_count, 1))
     return _ref_length_dict_, _ref_path_dict_
 
 
-# 创建哈西字典,将reference存入字典中
-# _ref_reverse_complement_会影响建立的哈西字典的大小
-# 如果要节约内存，将_ref_reverse_complement_设置为False,那么在过滤测序数据时，需要对read进行reverse complement
+# build a Hash table and store the reference in it
 def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_complement_: bool = False,
                        _pos_: bool = True, _print_: bool = True, ref_number: int = None, random_seed: int = 10) -> dict:
-    # 从reference文件中获取文件路径列表
     files_list = get_file_list(reference_path)
     if not files_list:
         print('Reference is invalid. Please check the path!')
@@ -195,14 +139,14 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
         file_name_gene = os.path.basename(file).split(".")[0]
         seq_total, need_to_read, ref_count = 0, None, 0
         if ref_number is not None:
-            # 获取该文件中序列的总条数
+            # Get the total number of sequences in the file
             seq_total = infile.read().count('>')
             if seq_total <= ref_number:
                 need_to_read = range(1, seq_total + 1)
             else:
                 random.seed(random_seed)
                 need_to_read = random.sample(range(1, seq_total + 1), ref_number)
-        # 跳过第一行>
+        # Skip the first line >
         infile.readline()
         for line in infile:
             temp_str = []
@@ -210,7 +154,6 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                 temp_str.append(line)
                 line = infile.readline()
             gene_number_count += 1
-            # 设定单个参考基因的最大序列数量
             ref_count += 1
             if ref_number is not None:
                 if ref_count not in need_to_read:
@@ -219,29 +162,28 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                     need_to_read.remove(ref_count)
                 if len(need_to_read) == 0:
                     break
-            # 保留seq序列中的数字和字母 去除换行符
+            # Preserve the numbers and letters in the seq sequence Remove line breaks
             ref_seq = ''.join(filter(str.isalnum, ''.join(temp_str).upper()))
             for j in range(0, len(ref_seq) - _kmer_size_ + 1):
                 kmer_info_list, ref_kmer = [], ref_seq[j:j + _kmer_size_]
                 if ref_kmer in ref_kmer_dict:
                     kmer_info_list = ref_kmer_dict[ref_kmer]
-                    # temp_list[0]是ref_kmer出现次数
+                    # temp_list[0] is the number of occurrences of ref_kmer
                     kmer_info_list[0] += 1
-                    # 如果需要添加位置信息
                     if _pos_:
-                        # temp_list[1]是ref_kmer出现的百分比位置总和
+                        # temp_list[1] is the sum of the percentage positions where ref_kmer appears
                         kmer_info_list[1] += (j + 1) / len(ref_seq)
                     if file_name_gene not in kmer_info_list:
-                        # temp_list[2]是ref_kmer出现的参考基因基因列表
                         kmer_info_list.append(file_name_gene)
                 else:
                     kmer_info_list = [1, (j + 1) / len(ref_seq), file_name_gene] if _pos_ else [1, 0,
                                                                                                 file_name_gene]
-                    # kmers字典的key是kmer_seq value是一个字典, list[0] 是kmer出现次数
-                    # list[1] 是kmer出现位置 list[2:]是该kmer在哪些文件(基因)中出现
-                    # sys.intern(ref_kmer)用于加快内存
+                    # ref_kmer_dict: key->kmer_seq value->list
+                    # list[0] Number of occurrences of kmer
+                    # list[1] the sum of the percentage positions of kmer appearing on a reference gene
+                    # list[2:] the genes in which the kmer appears
                     ref_kmer_dict[sys.intern(ref_kmer)] = kmer_info_list
-            # _ref_reverse_complement_ 对reference中的序列进行反向互补
+            # _ref_reverse_complement_ reverse and complement the reference sequence
             if _ref_reverse_complement_:
                 ref_seq = reverse_complement_limit(ref_seq)
                 for j in range(0, len(ref_seq) - _kmer_size_ + 1):
@@ -250,7 +192,7 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                         kmer_info_list = ref_kmer_dict[ref_kmer]
                         kmer_info_list[0] += 1
                         if _pos_:
-                            # 反向序列的pos值为负值
+                            # Negative value of pos for reverse sequence
                             kmer_info_list[1] -= (j + 1) / len(ref_seq)
                         if file_name_gene not in kmer_info_list:
                             kmer_info_list.append(file_name_gene)
@@ -258,8 +200,6 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
                         kmer_info_list = [1, -(j + 1) / len(ref_seq), file_name_gene] if _pos_ else [1, 0,
                                                                                                      file_name_gene]
                         ref_kmer_dict[sys.intern(ref_kmer)] = kmer_info_list
-            # json.dumps(my_dictionary)后面进行检测
-            # print(json.dumps(ref_kmer_dict))
             if _print_:
                 print('Mem.:', round(psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024, 2),
                       'G, Num. of Seq:', gene_number_count, end='\r')
@@ -276,7 +216,6 @@ def dynamic_limit_v2(_read_kmer_dict_: dict, smoother_level: int = 4, smoother_s
     for x in _read_kmer_dict_:
         if _read_kmer_dict_[x][0] <= smoother_size:
             count_list[_read_kmer_dict_[x][0] - 1] += 1
-    # 平滑器
     for i in range(smoother_level):
         for x in range(1, smoother_size - smoother_level + i):
             if count_list[x + smoother_level - 1 - i] < count_list[x - 1] \
@@ -285,14 +224,14 @@ def dynamic_limit_v2(_read_kmer_dict_: dict, smoother_level: int = 4, smoother_s
     return 2
 
 
-# 动态limit
+# dynamic limit
 def dynamic_limit(_read_kmer_dict_: dict, gen_avg_len: int, ref_rate: int = 1.5, list_size: int = 256) -> int:
     count_list = [0] * list_size
     for _read_kmer_ in _read_kmer_dict_:
-        # _read_kmer_dict_[x][0]是kmer出现次数 即计算出现出现n次的所有kmer的总数
+        # _read_kmer_dict_[x][0] is the number of occurrences of kmer
+        # the total number of all kmers with n occurrences is calculated
         if _read_kmer_dict_[_read_kmer_][0] <= list_size:
             count_list[_read_kmer_dict_[_read_kmer_][0] - 1] += 1
-    # 计算器
     F0, sum_f = len(_read_kmer_dict_), 0
     for x in range(list_size):
         sum_f += count_list[x]

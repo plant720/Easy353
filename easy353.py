@@ -7,8 +7,10 @@
 # @Description: 
 # @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
 import argparse
+import multiprocessing
 import os
 import sys
+import platform
 from Easy353Lib import assemble, filter
 
 
@@ -23,17 +25,17 @@ def main():
                       help="Input file(s) with unpaired (single-end) reads.", nargs="+")
     pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references.")
     pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", default="easy353_output")
-    pars.add_argument("-k1", dest="filter_kmer", type=int, help="Kmer setting for filtering reads. Default:31",
+    pars.add_argument("-k1", dest="filter_kmer", type=int, help="Kmer setting for filtering reads. Default:29",
                       default=29)
     pars.add_argument("-k2", dest="assemble_kmer", type=int, help="Kmer setting for assembling reads. Default:41",
                       default=41)
     pars.add_argument("-s", dest="step_length", type=int,
                       help="Step length of the sliding window on the reads. Default:1", default=1)
     pars.add_argument("-t1", dest="filter_thread", type=int,
-                      help="Threads setting for filtering reads. Default:4", default=1)
+                      help="Threads setting for filtering reads. Default:1", default=1)
     pars.add_argument("-t2", dest="assemble_thread", type=int,
                       help="Threads setting for assembling reads. Default:4", default=4)
-    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:2", default=8)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:8", default=8)
     pars.add_argument("-f", dest="function_mode", type=int, help="0:all,1:filter,2:assemble. Default:0", default=0)
     pars.add_argument("-min", dest="minimum_length_ratio", type=float,
                       help="The minimum ratio of contig length to reference average length. Default:1.0", default=1.0)
@@ -76,5 +78,9 @@ def main():
 
 
 if __name__ == "__main__":
+    if platform.system() in ("Linux", "Darwin"):
+        multiprocessing.set_start_method('fork')
+    else:
+        multiprocessing.set_start_method('spawn')
     main()
 
