@@ -303,8 +303,7 @@ def assemble_one_file(_reads_file_: str, _out_dir_: str, _ref_file_: str,
     ref_kmer_count = [_ref_kmer_dict_[i][0] for i in shared_seed]
     read_kmer_count = [_read_kmer_dict_[i][0] for i in shared_seed]
 
-    seed_list = [(x, _ref_kmer_dict_[x][0] / get_median(ref_kmer_count) * _read_kmer_dict_[x][0]
-                  / get_median(read_kmer_count), _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in shared_seed]
+    seed_list = [(x, _ref_kmer_dict_[x][0], _ref_kmer_dict_[x][1] / _ref_kmer_dict_[x][0]) for x in shared_seed]
     # Calculate the total number of remaining kmer after removing the less frequent kmer
     read_kmer_count_sum = sum(_read_kmer_dict_[i][0] for i in _read_kmer_dict_)
     del shared_seed, ref_kmer_count, read_kmer_count

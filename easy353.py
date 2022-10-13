@@ -38,7 +38,7 @@ def main():
     pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:8", default=8)
     pars.add_argument("-f", dest="function_mode", type=int, help="0:all,1:filter,2:assemble. Default:0", default=0)
     pars.add_argument("-min", dest="minimum_length_ratio", type=float,
-                      help="The minimum ratio of contig length to reference average length. Default:1.0", default=1.0)
+                      help="The minimum ratio of contig length to reference average length. Default:1.0", default=0.8)
     pars.add_argument("-max", dest="maximum_length_ratio", type=float,
                       help="The maximum ratio of contig length to reference average length. Default:2.0", default=2.0)
     pars.add_argument("-change_seed", dest="change_seed", type=int, help="Times of changing seed. Default:32",
