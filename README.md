@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Easy353 is a tool for recovering Angiosperms353 gene set(AGS), which can filter reads from high throughput sequencing data such as RNASeq and genome skimming and capture AGS accurately and effectively with our optimized de novo assembler. 
+Easy353 is a tool for recovering Angiosperms353 gene set(AGS), which can filter reads from high throughput sequencing data such as RNASeq and genome skimming and capture AGS accurately and effectively with our optimized reference-guided assembler. 
 
 ## Installation
 
@@ -11,7 +11,7 @@ We also provide a command line for computers with large memory and multi-core CP
 
 ### Easy353 with GUI
 
-For Windows and macOS users, it is recommended to get the ALL-IN-ONE graphical user interface version of Easy353 (Easy353-GUI) from https://github.com/plant720/Easy353/release.
+For Windows and macOS users, it is recommended to get the ALL-IN-ONE graphical user interface version of Easy353 (Easy353-GUI) from https://github.com/plant720/Easy353/releases.
 
 ![image-20220629211901122](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220629211901.png)
 
