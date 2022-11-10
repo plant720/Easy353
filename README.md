@@ -131,7 +131,7 @@ The output directory contains the `filtered_reads` and the `target_genes`.
 
 ### Easy353-GUI
 
-Please use the Easy353-gui.app or Easy353-gui.exe from https://github.com/plant720/Easy353/release, the `Easy353-gui.py` is only used for development.
+Please use the Easy353-gui.app or Easy353-gui.exe from https://github.com/plant720/Easy353/releases, the `Easy353-gui.py` is only used for development.
 
 * For Easy353-GUI, you should set the `Paired fq file 1`, `Paired fq file 2`, `Taxonomy` ,and `Output dir` as shown in the image below
 
