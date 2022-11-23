@@ -79,11 +79,11 @@ pip install biopython psutil requests beautifulsoup4
 ## Test
 The test files can be found at https://github.com/plant720/Easy353Test
 
-* Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/data):
+* Download the simulation data of [*Glycine max*](https://github.com/plant720/Easy353Test/tree/master/Glycine_max):
 
 ```shell
-wget https://github.com/plant720/Easy353Test/raw/master/data/Gmax_sim_1.fastq.gz
-wget https://github.com/plant720/Easy353Test/raw/master/data/Gmax_sim_2.fastq.gz
+wget https://raw.githubusercontent.com/plant720/Easy353Test/master/Glycine_max/Gmax_sim_1.fastq.gz
+wget https://raw.githubusercontent.com/plant720/Easy353Test/master/Glycine_max/Gmax_sim_2.fastq.gz
 ```
 
 ### Easy353-cmd
