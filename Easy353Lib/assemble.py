@@ -25,6 +25,22 @@ def get_median(lst: list) -> float:
     return (lst[half] + lst[~half]) / 2
 
 
+def median(x):
+    x = sorted(x)
+    length = len(x)
+    mid, rem = divmod(length, 2)  # divmod函数返回商和余数
+    if rem:
+        return x[:mid], x[mid + 1:], x[mid]
+    else:
+        return x[:mid], x[mid:], (x[mid - 1] + x[mid]) / 2
+
+
+# get quartile
+def quartile(x):
+    lHalf, rHalf, q2 = median(x)
+    return median(lHalf)[2], q2, median(rHalf)[2]
+
+
 # kmers generator
 def make_kmers(seq, k):
     for i in range(len(seq) - k + 1):
@@ -110,9 +126,11 @@ def make_assemble_hash_dict(_read_file_: str, _ref_file_: str, _kmer_size_: int,
 def assemble_contig_forward(_read_kmer_dict_: dict, _seed_: str, iteration: int = 1000) -> tuple:
     temp_list, stack_list = [_seed_], []
     best_kmer_weight, cur_kmer_weight, best_seq, cur_seq, best_pos, cur_pos = [], [], [], [], [], []
-    # Initialize a set and each element is a tuple
-    # The first element is the kmer used for assembly, and the second element is the number of kmer
-    used_kmer_info = {(_seed_, _read_kmer_dict_.get(_seed_)[0])}
+    # Initialize two lists
+    # The first is the kmer used for assembly, and the second  is the number of kmer
+    reads_list, cur_used_kmer_count = [], []
+    reads_list.append(_seed_)
+    cur_used_kmer_count.append(_read_kmer_dict_.get(_seed_)[0])
     _pos, node_distance = 0, 0
     while True:
         # Dynamically generate the kmers for the next iteration and rank them according to the weights
@@ -146,13 +164,12 @@ def assemble_contig_forward(_read_kmer_dict_: dict, _seed_: str, iteration: int 
         cur_kmer_weight.append(node[0][2])
         cur_seq.append(node[0][0][-1])
         # When calculating the number of used kmer, the number of backtracked kmer is not removed
-        used_kmer_info.add((node[0][0], node[0][3]))
+        reads_list.append(node[0][0])
+        cur_used_kmer_count.append(node[0][3])
         node_distance += 1
         if not iteration:
             break
-    reads_list = [i[0] for i in used_kmer_info]
-    cur_used_kmer_count = [i[1] for i in used_kmer_info]
-    return best_seq, best_pos, reads_list, sum(cur_used_kmer_count)
+    return best_seq, best_pos, reads_list, sum(cur_used_kmer_count), best_kmer_weight
 
 
 # Calculate weights using kmer's occurrence and location information
@@ -162,11 +179,24 @@ def count_pos(count, cur_pos, average_pos):
     return count ** 0.5
 
 
-def assemble_read_for_contig(_read_kmer_dict_: dict, _seed_: str, iteration: int = 1000):
-    right, pos_1, reads_list_1, kmer_count_1 = \
+def assemble_read_for_contig(_read_kmer_dict_: dict, _seed_: str, iteration: int = 1000, trim: bool = False):
+    right, pos_1, reads_list_1, kmer_count_1, kmer_weight_1 = \
         assemble_contig_forward(_read_kmer_dict_, _seed_, iteration)
-    left, pos_2, reads_list_2, kmer_count_2 = \
+    left, pos_2, reads_list_2, kmer_count_2, kmer_weight_2 = \
         assemble_contig_forward(_read_kmer_dict_, reverse_complement_limit(_seed_), iteration)
+    if trim:
+        # get the quartile from the base_kmer_weight
+        if len(kmer_weight_1) >= 3:
+            quartile_1 = quartile(kmer_weight_1)[0]
+            while kmer_weight_1[-1] < quartile_1:
+                right.pop()
+                kmer_weight_1.pop()
+        if len(kmer_weight_2) >= 3:
+            quartile_2 = quartile(kmer_weight_2)[0]
+            # trim the sequence according to the weight
+            while kmer_weight_2[-1] < quartile_2:
+                left.pop()
+                kmer_weight_2.pop()
     _pos_all_ = [x for x in pos_1 + pos_2 if x > 0]
     min_pos, max_pos = 0, 1
     if _pos_all_:

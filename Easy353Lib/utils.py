@@ -135,17 +135,18 @@ def make_ref_kmer_dict(reference_path: str, _kmer_size_: int, _ref_reverse_compl
     ref_kmer_dict = defaultdict(list)
     gene_number_count = 0
     for file in files_list:
-        infile = open(file, 'r', encoding='utf-8', errors='ignore')
         file_name_gene = os.path.basename(file).split(".")[0]
         seq_total, need_to_read, ref_count = 0, None, 0
         if ref_number is not None:
             # Get the total number of sequences in the file
-            seq_total = infile.read().count('>')
+            with open(file, 'r', encoding='utf-8', errors='ignore') as f:
+                seq_total = f.read().count('>')
             if seq_total <= ref_number:
-                need_to_read = range(1, seq_total + 1)
+                need_to_read = list(range(1, seq_total + 1))
             else:
                 random.seed(random_seed)
-                need_to_read = random.sample(range(1, seq_total + 1), ref_number)
+                need_to_read = random.sample(list(range(1, seq_total + 1)), ref_number)
+        infile = open(file, 'r', encoding='utf-8', errors='ignore')
         # Skip the first line >
         infile.readline()
         for line in infile:

@@ -320,6 +320,9 @@ if __name__ == "__main__":
     pars.add_argument("-t", dest="filter_thread", type=int,
                       help="Threads setting for filtering reads. Default:4", default=4)
     pars.add_argument("-fast", dest="fast", action="store_true", help="Whether to use fast mode.")
+    # 默认限制使用的参考序列的数量
+    pars.add_argument("-reference_number", dest="reference_number", type=int,
+                      help="The number of the reference sequences used to build hash table. Default:all", default=None)
     args = pars.parse_args()
 
     fastq_files = tuple()
@@ -338,4 +341,4 @@ if __name__ == "__main__":
     filter_flow(_read_data_tuple_=fastq_files, _out_dir_=args.output_dir,
                 _reference_path_=args.reference, _kmer_size_=args.filter_kmer, _step_size_=args.step_length,
                 _ref_reverse_complement_=args.fast, _paired_reads_=_paired_reads_,
-                _thread_for_filter_=args.filter_thread)
+                _thread_for_filter_=args.filter_thread, _ref_number_=args.reference_number)

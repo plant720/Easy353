@@ -126,9 +126,9 @@ def window_init():
                   )],
         # min_percent_length and max_percent_length
         [sg.Text('Min length ratio', size=(11, 1), justification='right', font=("Consolas", 13)),
-         sg.Input(1.0, key='-minimum_length_ratio-', size=(8, 1), font=("Consolas", 13), expand_x=True,
+         sg.Input(0.8, key='-minimum_length_ratio-', size=(8, 1), font=("Consolas", 13), expand_x=True,
 
-                  tooltip="The minimum ratio of contig length to reference average length. [Default:1.0]"),
+                  tooltip="The minimum ratio of contig length to reference average length. [Default:0.8]"),
 
          sg.Text('Max length ratio', size=(11, 1), justification='right', font=("Consolas", 13)),
          sg.Input(2.0, key='-maximum_length_ratio-', size=(8, 1), font=("Consolas", 13), expand_x=True,
@@ -369,7 +369,7 @@ def filter_read_thread(window: sg.Window, _read_data_tuple_: tuple, _out_dir_: s
 def assemble_read_thread(window: sg.Window, _input_read_path_: str, _out_dir_: str, _ref_path_: str,
                          _assemble_kmer_size_: int, _assemble_thread_: int = 4, _ref_reverse_complement_: bool = True,
                          _pos_: bool = True, _change_seed_: int = 1000, _kmer_limit_count_: int = 2,
-                         _min_percent_length_: float = 1.0, _max_percent_length_: float = 2.0,
+                         _min_percent_length_: float = 0.8, _max_percent_length_: float = 2.0,
                          _iteration_: int = 1000):
     print('INFO: Start of reads assembly')
     assemble_out_dir = os.path.join(_out_dir_, "target_genes")
@@ -436,7 +436,7 @@ def easy353_gui():
     fq_file_1, fq_file_2, unpaired_fq_file, output_dir = None, None, None, None
     filter_kmer, assemble_kmer, filter_thread, assemble_thread = 31, 41, 1, 4
     step_length, kmer_limit, minimum_length_ratio, maximum_length_ratio, change_seed, reference_number \
-        = 1, 2, 1.0, 2.0, 32, 100
+        = 1, 2, 0.8, 2.0, 32, 100
     # fast -> ref_reverse_complement
     fast = False
     # get_ref parameter
@@ -469,7 +469,7 @@ def easy353_gui():
 
             window['-change_seed-'].update(32)
             window['-kmer_limit-'].update(2)
-            window['-minimum_length_ratio-'].update(1.0)
+            window['-minimum_length_ratio-'].update(0.8)
             window['-maximum_length_ratio-'].update(2.0)
             window['-reverse_complement-'].update(False)
 
@@ -477,7 +477,7 @@ def easy353_gui():
             fq_file_1, fq_file_2, unpaired_fq_file, output_dir = None, None, None, None
             filter_kmer, assemble_kmer, filter_thread, assemble_thread = 31, 41, 1, 1
             step_length, kmer_limit, minimum_length_ratio, maximum_length_ratio, change_seed, reference_number \
-                = 1, 2, 1.0, 2.0, 32, 100
+                = 1, 2, 0.8, 2.0, 32, 100
             # fast -> ref_reverse_complement
             fast = False
             # get_ref parameter
