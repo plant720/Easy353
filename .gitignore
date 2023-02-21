@@ -143,4 +143,6 @@ cython_debug/
 easy353-gui.py
 icon*
 
-
+# MacOS
+.DS_Store
+*/.DS_Store

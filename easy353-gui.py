@@ -163,7 +163,6 @@ def window_init():
         [sg.Text('Authors: zzhen', font=("Consolas", 12), justification='left'),
          sg.Text('Email: zzhen0302@163.com', font=("Consolas", 12), justification='left')],
     ]
-    # s
     layout = [
         [sg.Push(), sg.Column(info_frame, element_justification='left'), sg.Push()],
         [sg.Pane([sg.Column(left_col, element_justification='c', expand_x=True, expand_y=True),
@@ -171,11 +170,22 @@ def window_init():
                  orientation='horizontal', relief=sg.RELIEF_SUNKEN, key='-PANE-')],
     ]
 
-    window = sg.Window(title='Easy353 v1.5.0', layout=layout, icon=icon, finalize=True)
+    window = sg.Window(title='Easy353 v1.6.7', layout=layout, icon=icon, finalize=True)
     return window
 
 
-# function used to get fasta file based on a url
+def net_connected():
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        if s.connect_ex(("www.baidu.com", 443)) == 0 or s.connect_ex(("www.google.com", 443)) == 0:
+            s.close()
+            return True
+    except ConnectionError:
+        return False
+
+
+# function used to get a fasta file based on an url
 def download_files(_spec_info_: dict, output_dir: str):
     info = None
     url = _spec_info_['Fasta file url']
@@ -522,53 +532,116 @@ def easy353_gui():
                 exclude = re.split(r"[,，、 ]", exclude)
             if values["-exclude_file-"]:
                 exclude_file = values["-exclude_file-"]
-
             if values["-k1-"]:
-                filter_kmer = int(values["-k1-"])
+                try:
+                    filter_kmer = int(values["-k1-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of filtering.kmer should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-k2-"]:
-                assemble_kmer = int(values["-k2-"])
+                try:
+                    assemble_kmer = int(values["-k2-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of assembly.kmer should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-t1-"]:
-                filter_thread = int(values["-t1-"])
+                try:
+                    filter_thread = int(values["-t1-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of filtering.thread should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-t2-"]:
-                assemble_thread = int(values["-t2-"])
+                try:
+                    assemble_thread = int(values["-t2-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of assembly.thread should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-s-"]:
-                step_length = int(values["-s-"])
+                try:
+                    step_length = int(values["-s-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of step.length should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-reference_number-"]:
-                reference_number = int(values["-reference_number-"])
+                try:
+                    reference_number = int(values["-reference_number-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of ref.number should be integer or none!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
+            else:
+                reference_number = None
             if values["-change_seed-"]:
-                change_seed = int(values["-change_seed-"])
+                try:
+                    change_seed = int(values["-change_seed-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of change.seed should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-kmer_limit-"]:
-                kmer_limit = int(values["-kmer_limit-"])
+                try:
+                    kmer_limit = int(values["-kmer_limit-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of kmer.limit should be integer!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-minimum_length_ratio-"]:
-                minimum_length_ratio = float(values["-minimum_length_ratio-"])
+                try:
+                    minimum_length_ratio = float(values["-minimum_length_ratio-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of min.length.ratio should be float!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-maximum_length_ratio-"]:
-                maximum_length_ratio = float(values["-maximum_length_ratio-"])
+                try:
+                    maximum_length_ratio = float(values["-maximum_length_ratio-"])
+                except (ValueError, TypeError):
+                    sg.Popup("The value of max.length.ratio should be float!",
+                             title='Info', keep_on_top=True, font=("Consolas", 13))
+                    continue
             if values["-reverse_complement-"]:
                 fast = True
             # download the AGS sequences from Kew Tree of Life Explorer
             species_dir = os.path.join(output_dir, "353_genes_of_species")
+            # check the net connect
+            if not net_connected():
+                sg.Popup("The network is not connected,please check it! The software will quit later!",
+                         title='Warning', keep_on_top=True, font=("Consolas", 13))
+                window.close()
             thread = threading.Thread(
                 target=download_species_thread,
                 args=(species_dir, classification, window),
                 daemon=True)
             thread.start()
-
         if event == '-DOWNLOAD DONE-':
             thread.join(timeout=0)
             # After downloading the AGS sequences, generate the reference files
             # The variable thread has changed
             ref_dir = os.path.join(output_dir, "reference_of_353_genes")
+            # if None file under species_dir
+            if len(os.listdir(species_dir)) == 0:
+                sg.Popup("No file was downloaded, please check whether the taxonomy: " + ",".join(classification)
+                         + " is right! The software will quit later!", title='Error',
+                         keep_on_top=True, font=("Consolas", 13))
+                window.close()
             thread = threading.Thread(
                 target=generate_ref_thread,
                 args=(species_dir, ref_dir, exclude, exclude_file, window),
                 daemon=True)
             thread.start()
-
         if event == '-GENERATE DONE-':
             thread.join(timeout=0)
             # After building the reference sequences, enter the new thread to do read filtering
             easy353_result_dir = os.path.join(output_dir, "easy353_result")
             filter_read_dir = os.path.join(easy353_result_dir, "filtered_reads_for_genes")
+            # check the species_dir to set the default reference_number
+            if reference_number is None:
+                reference_number = len(os.listdir(species_dir))
             if not os.path.isdir(filter_read_dir):
                 os.makedirs(filter_read_dir)
             thread = threading.Thread(
