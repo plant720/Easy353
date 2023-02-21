@@ -1,5 +1,5 @@
 # Easy353
-If you use the Easy353 software, please cite our manuscript**: Zhen Zhang, Pulin Xie, Yongling Guo, Wenbin Zhou, Enyan Liu, Yan Yu. **Easy353: A tool to get Angiosperms353 genes for phylogenomic research**. *Molecular Biology and Evolution*. msac261 (2022). https://doi.org/10.1093/molbev/msac261.
+If you use the Easy353 software, please cite our manuscript: Zhen Zhang, Pulin Xie, Yongling Guo, Wenbin Zhou, Enyan Liu, Yan Yu. **Easy353: A tool to get Angiosperms353 genes for phylogenomic research**. *Molecular Biology and Evolution*. msac261 (2022). https://doi.org/10.1093/molbev/msac261.
 
 Please also cite the dependencies if used:
 
