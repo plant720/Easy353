@@ -15,7 +15,6 @@ from collections import defaultdict
 from urllib.error import HTTPError
 from urllib.request import urlretrieve
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from functools import partial
 from Bio import SeqIO
 import Easy353Lib
 
@@ -182,18 +181,20 @@ def main():
                 for element in down_spec_info:
                     _writer_.writerow(element)
         print("INFO: Download species data")
-
         # download files
-        count = 1
         with ThreadPoolExecutor(max_workers=_thread_) as executor:
-            futures = [executor.submit(partial(download_fasta_file, output_dir=output_dir), _spec_info_)
-                       for _spec_info_ in down_spec_info]
-            for future in as_completed(futures):
+            tasks = []
+            for _spec_info_ in down_spec_info:
+                tasks.append(executor.submit(download_fasta_file, _spec_info_, output_dir))
+            count = 0
+            for future in as_completed(tasks):
+                count += 1
                 if future.result() is not None:
                     print(future.result())
-                if count % 10 == 0:
-                    print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
-                count += 1
+                # if count % 10 == 0:
+                print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
+                if count == len(down_spec_info):
+                    print("INFO: All species have been downloaded")
     if args.exclude is not None:
         exclude_species.extend(args.exclude)
     if args.exclude_file is not None:

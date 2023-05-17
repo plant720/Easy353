@@ -1,22 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Time       : 2022/6/7 10:39 上午
+# @Time       : 2023/5/16 10:39 上午
 # @Author     : zzhen
 # @File       : setup.py
 # @Software   : PyCharm
 # @Description: 
-# @Copyright  : Copyright (c) 2022 by sculab, All Rights Reserved.
-
-"""Setup the Easy353 environment."""
-
-# Test pip
-# 1) Clean the /dist directory
-# 2) python3 setup.py sdist bdist_wheel
-# 3) pip install --index-url https://test.pypi.org/simple/
-#    --extra-index-url https://pypi.org/simple atram
-# 4) twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-
-
+# @Copyright  : Copyright (c) 2023 by sculab, All Rights Reserved.
 import platform
 import sys
 import setuptools
@@ -58,12 +47,10 @@ scripts_to_install = ["easy353.py", "build_database.py"]
 
 setup(
     name="Easy353",
-    version="1.5.0",
+    version="2.0.1",
     author="zzhen",
     author_email="zzhen0302@163.com",
-    description="""a tool for recovering the Angiosperms353 gene set(AGS), 
-                   which can filter and de novo assemble reads from sequencing data,
-                   helping users capture AGS accurately and effectively.""",
+    description="""a tool specifically designed to recover the Angiosperms353 gene set (AGS). It effectively filters AGS-related reads from high-throughput sequencing data, and accurately recovers AGS using its optimized reference-guided assembler.""",
     license="MIT License",
     url="https://github.com/plant720/Easy353",
     python_requires='>=3.7',
