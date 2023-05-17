@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/202304272252769.svg" alt="logo22" style="zoom:25%;" />
+   <img src="https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/202304272252769.svg" alt="logo22" width="200" />
 </p>
 
 ### Easy353: An Efficient Tool Designed to Recover the Angiosperms353 Gene Set
