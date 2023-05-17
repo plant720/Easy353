@@ -235,7 +235,6 @@ def assemble_seq_from_dbg(dbg_graph: DeBruijnGraph, max_iterations=1000):
     # select the node with the most occurrence as the seed
     k_size = dbg_graph.k_size
     best_seq, best_seed = '', ''
-    # todo: seed的选取方法需要修改 不能只选择出现次数最多的节点
     seeds = sorted(dbg_graph.nodes.values(), key=lambda x: x.occur, reverse=True)[:10]
     for seed in seeds:
         # traverse the graph from the seed
