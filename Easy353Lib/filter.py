@@ -239,76 +239,38 @@ def reads_bin_filter(ref_path: str, ref_kmer_dict: defaultdict, k_size: int, s_s
     if paired_reads: infile_2.close()
 
 
-# logger = logging.getLogger(__file__)
-# logger.setLevel(logging.DEBUG)
-#
-# # 建立一个filehandler来把日志记录在文件里，级别为debug以上
-# fh = logging.FileHandler('filter.log')
-# fh.setLevel(logging.DEBUG)
-# fh.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)s : %(message)s',
-#                                   datefmt='%Y-%m-%d %H:%M:%S'))
-# # 将相应的handler添加在logger对象中
-# logger.addHandler(fh)
-# # 建立一个stream-handler来把日志打在CMD窗口上，级别为error以上
-# ch = logging.StreamHandler(sys.stdout)
-# # 当使用silent mode时，只输出error日志
-# print_level = logging.DEBUG
-# ch.setLevel(print_level)
-# ch.setFormatter(logging.Formatter('%(message)s'))
-# logger.addHandler(ch)
-#
-# ref_path = '/Users/zzhen/Desktop/test/Glycine_353'
-# fq1 = '/Users/zzhen/Desktop/test/Gmax_sim_1.fastq.gz'
-# fq2 = '/Users/zzhen/Desktop/test/Gmax_sim_2.fastq.gz'
-# out_dir = '/Users/zzhen/Desktop/test/my_test'
-# ref_kmer_dict = defaultdict(int)
-#
-# t_start = time.perf_counter()
-# make_ref_kmer_dict(ref_kmer_dict, ref_path, 21, True, False)
-# reads_bin_filter(ref_path, ref_kmer_dict, 21, 1, fq1, fq2, out_dir, 0, 1, False)
-#
-# t_end = time.perf_counter()
-#
-# logger.info('Time used for filter: {:.2f} s'.format(t_end - t_start))
-
 if __name__ == '__main__':
     pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, usage='%(prog)s [options]',
                                    description="Easy353's filter zzhen@sculab")
-    # pars.add_argument('-fq1', dest='fq_file_1', type=str, help='Input sequencing file(s) -1 (*.fq/.gz).',
-    #                   required=False)
-    # pars.add_argument('-fq2', dest='fq_file_2', type=str, help='Input sequencing file(s) -2 (*.fq/.gz).',
-    #                   required=False)
-    # pars.add_argument('-r', dest='reference', type=str, help='Input a ref file or directory.')
-    # pars.add_argument('-o', dest='out_dir', type=str, help='Output directory.', default='filter_out')
-    # pars.add_argument('-fk', dest='filter_kmer', type=int, help='Kmer setting for filtering reads. Default:31',
-    #                   default=31)
-    # pars.add_argument('-s', dest='step_length', type=int,
-    #                   help='Length of the sliding window on the reads. Default:1', default=1)
-    # pars.add_argument('-ft', dest='filter_thread', type=int,
-    #                   help='Threads setting for filtering reads. Default:1', default=1)
-    # pars.add_argument('-fpr', dest='filter_pair_read', action='store_true',
-    #                   help='fpr mode:get more filtered reads. If yes (more reads) or not (less time).')
-    # pars.add_argument('-log', dest='log_file', type=str, help='The log file.', default='filter.log')
-    # pars.add_argument('-silent', dest='silent', action='store_true',
-    #                   help='If using silent mode, there will not output any info!')
+    pars.add_argument('-fq1', dest='fq_file_1', type=str, help='Input sequencing file(s) -1 (*.fq/.gz).',
+                      required=False)
+    pars.add_argument('-fq2', dest='fq_file_2', type=str, help='Input sequencing file(s) -2 (*.fq/.gz).',
+                      required=False)
+    pars.add_argument('-r', dest='reference', type=str, help='Input a ref file or directory.')
+    pars.add_argument('-o', dest='out_dir', type=str, help='Output directory.', default='filter_out')
+    pars.add_argument('-fk', dest='filter_kmer', type=int, help='Kmer setting for filtering reads. Default:31',
+                      default=31)
+    pars.add_argument('-s', dest='step_length', type=int,
+                      help='Length of the sliding window on the reads. Default:1', default=1)
+    pars.add_argument('-ft', dest='filter_thread', type=int,
+                      help='Threads setting for filtering reads. Default:1', default=1)
+    pars.add_argument('-fpr', dest='filter_pair_read', action='store_true',
+                      help='fpr mode:get more filtered reads. If yes (more reads) or not (less time).')
+    pars.add_argument('-log', dest='log_file', type=str, help='The log file.', default='filter.log')
+    pars.add_argument('-silent', dest='silent', action='store_true',
+                      help='If using silent mode, there will not output any info!')
     args = pars.parse_args()
 
-    args.fq_file_1 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.1.fq.gz'
-    args.fq_file_2 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.2.fq.gz'
-    args.reference = '/Users/zzhen/Desktop/test/Apiaceae353'
-    args.out_dir = '/Users/zzhen/Desktop/test/filter_out'
-    args.filter_kmer = 21
-    args.step_length = 1
-    args.filter_thread = 8
-    args.filter_pair_read = False
-    args.log_file = 'filter.log'
-    args.silent = False
-    # print(args)
-
-    # print(get_file_lst(args.reference))
-    # print(sorted(get_file_lst(args.reference)))
-    # for i, j in enumerate(sorted(get_file_lst(args.reference))):
-    #     print(i, j)
+    # args.fq_file_1 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.1.fq.gz'
+    # args.fq_file_2 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.2.fq.gz'
+    # args.reference = '/Users/zzhen/Desktop/test/Apiaceae353'
+    # args.out_dir = '/Users/zzhen/Desktop/test/filter_out'
+    # args.filter_kmer = 21
+    # args.step_length = 1
+    # args.filter_thread = 8
+    # args.filter_pair_read = False
+    # args.log_file = 'filter.log'
+    # args.silent = False
 
     # set the logger
     logger = logging.getLogger(__file__)

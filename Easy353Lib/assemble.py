@@ -15,6 +15,7 @@ import logging
 import platform
 import argparse
 import multiprocessing
+from Bio import SeqIO
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 # import the function implemented in the filter_yy.py file
@@ -22,41 +23,26 @@ from Easy353Lib.filter import dnaseq2int, binseq2dna, get_file_lst
 # import functions implemented in the node.py file
 from Easy353Lib.node import DeBruijnGraph
 
-# import ctypes
-#
-# utils = ctypes.cdll.LoadLibrary('../clib/utils_mac.so')
-# utils.optimized_lcs_len.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
-# utils.optimized_lcs_len.restype = ctypes.c_int
-
 logger = logging.getLogger("easy353.assemble")
 
 
-# # get the avg length of the reference seqs
-# def get_avg_ref_len(ref_path: str) -> int:
-#     ref_len_lst = []
-#     with open(ref_path, 'rt') as ref_file:
-#         for line in ref_file:
-#             tmp_seq = []
-#             while line and line[0] != '>':
-#                 tmp_seq.append(line)
-#                 line = next(ref_file, None)
-#             # Only keep the letters in the ref sequence
-#             ref_seq = ''.join(filter(str.isalpha, ''.join(tmp_seq).upper()))
-#             ref_len_lst.append(len(ref_seq))
+# import ctypes
 #
-#     return int(sum(ref_len_lst) / len(ref_len_lst))
-
-
-def get_ref_sequence(ref_file_path: str) -> str:
-    ref_sequence = ""
-    with open(ref_file_path, 'rt') as ref_file:
-        for line in ref_file:
-            if line.startswith(">"):
-                continue
-            ref_sequence += line
-    return ref_sequence.upper().translate(str.maketrans("ACGTU\n", "ACGTT$", "RYMKSWHBVDN"))
-
-
+# utils = ctypes.CDLL('./clib/utils_mac.so') if __name__ == '__main__' else ctypes.CDLL('Easy353Lib/clib/utils_mac.so')
+# utils.optimized_lcs_len.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+# utils.optimized_lcs_len.restype = ctypes.c_int
+#
+#
+# def get_ref_sequence(ref_file_path: str) -> str:
+#     ref_sequence = ""
+#     with open(ref_file_path, 'rt') as ref_file:
+#         for line in ref_file:
+#             if line.startswith(">"):
+#                 continue
+#             ref_sequence += line
+#     return ref_sequence.upper().translate(str.maketrans("ACGTU\n", "ACGTT$", "RYMKSWHBVDN"))
+#
+#
 # # 根据每一条read和ref序列的overlap长度 产生一个用于拼接的kmer值
 # def get_dynamic_kmer(fa_1: str, fa_2: str, ref_file_path: str, min_overlap_len: int = 21,
 #                      max_overlap_len: int = 51, max_read_num: int = 2000):
@@ -84,31 +70,45 @@ def get_ref_sequence(ref_file_path: str) -> str:
 #         return min_overlap_len
 #     overlap_len_lst = [i for i in overlap_len_lst if i > 0]
 #     return int(sum(overlap_len_lst) / len(overlap_len_lst))
+#
+#
+# # # 从read_File中选定一定数量的reads，同参考序列进行overlap，用于判断参考序列同contig的方向
+# # def get_ref_direction(fa_1: str, fa_2: str, ref_file_path: str, read_num: int = 200):
+# #     # get the reference sequence
+# #     ref_sequence = get_ref_sequence(ref_file_path).encode("utf-8")
+# #     forward_overlap_len_sum, reverse_overlap_len_sum = 0, 0
+# #     paired_read = not fa_1 == fa_2
+# #     # get the read sequence
+# #     forward_file = open(fa_1, 'rt')
+# #     if paired_read: reverse_file = open(fa_2, 'rt')
+# #     for forward_read in forward_file:
+# #         if forward_read[0] == ">":
+# #             continue
+# #         if paired_read:
+# #             next(reverse_file)
+# #         reverse_read = next(reverse_file) if paired_read else dna_reverse_complement(forward_read)
+# #         # get the overlap length
+# #         forward_overlap_len_sum += utils.optimized_lcs_len(ref_sequence, forward_read.encode("utf-8"), 0, 500)
+# #         reverse_overlap_len_sum += utils.optimized_lcs_len(ref_sequence, reverse_read.encode("utf-8"), 0, 500)
+# #         read_num -= 1
+# #         if read_num <= 0:
+# #             break
+# #     return False if forward_overlap_len_sum > reverse_overlap_len_sum else True
 
 
-# 从read_File中选定一定数量的reads，同参考序列进行overlap，用于判断参考序列同contig的方向
-# def get_ref_direction(fa_1: str, fa_2: str, ref_file_path: str, read_num: int = 200):
-#     # get the reference sequence
-#     ref_sequence = get_ref_sequence(ref_file_path).encode("utf-8")
-#     forward_overlap_len_sum, reverse_overlap_len_sum = 0, 0
-#     paired_read = not fa_1 == fa_2
-#     # get the read sequence
-#     forward_file = open(fa_1, 'rt')
-#     if paired_read: reverse_file = open(fa_2, 'rt')
-#     for forward_read in forward_file:
-#         if forward_read[0] == ">":
-#             continue
-#         if paired_read:
-#             next(reverse_file)
-#         reverse_read = next(reverse_file) if paired_read else dna_reverse_complement(forward_read)
-#         # get the overlap length
-#         forward_overlap_len_sum += utils.optimized_lcs_len(ref_sequence, forward_read.encode("utf-8"), 0, 500)
-#         reverse_overlap_len_sum += utils.optimized_lcs_len(ref_sequence, reverse_read.encode("utf-8"), 0, 500)
-#         read_num -= 1
-#         if read_num <= 0:
-#             break
-#     return False if forward_overlap_len_sum > reverse_overlap_len_sum else True
-
+# # get the avg length of the reference seqs
+# def get_avg_ref_len(ref_path: str) -> int:
+#     ref_len_lst = []
+#     with open(ref_path, 'rt') as ref_file:
+#         for line in ref_file:
+#             tmp_seq = []
+#             while line and line[0] != '>':
+#                 tmp_seq.append(line)
+#                 line = next(ref_file, None)
+#             # Only keep the letters in the ref sequence
+#             ref_seq = ''.join(filter(str.isalpha, ''.join(tmp_seq).upper()))
+#             ref_len_lst.append(len(ref_seq))
+#     return int(sum(ref_len_lst) / len(ref_len_lst))
 
 # return the reverse complementary sequence of a DNA sequence.
 def dna_reverse_complement(_dna_: str) -> str:
@@ -116,8 +116,26 @@ def dna_reverse_complement(_dna_: str) -> str:
     return _dna_.upper().translate(str.maketrans("ACGTU", "TGCAA", "RYMKSWHBVDN\n"))[::-1]
 
 
+# extract all sequences from a fasta file and return a list of tuples (id,seq)
+def extract_seq_from_fasta_file(ref_file_path: str) -> list:
+    sequences = []
+    with open(ref_file_path, 'rt') as ref_file:
+        seq_id, seq = "", ""
+        for line in ref_file:
+            if line.startswith(">"):
+                if seq != "":
+                    sequences.append((seq_id, seq))
+                    seq = ""
+                seq_id = line[1:].strip()
+                continue
+            seq += line.strip()
+        if seq != "":
+            sequences.append((seq_id, seq))
+    return sequences
+
+
 # build a hash table based on the reference file which is a fasta file
-def build_ref_hash_table(ref_kmer_dict: defaultdict, ref_file_path: str, k_size: int, get_reverse_comp: bool = True):
+def build_ref_hash_table(ref_kmer_dict: defaultdict, ref_file_path: str, k_size: int, get_reverse_comp: bool = False):
     # set the kmer mask
     kmer_mask = (1 << (k_size << 1)) - 1
     ref_file = open(ref_file_path, 'rt')
@@ -136,16 +154,12 @@ def build_ref_hash_table(ref_kmer_dict: defaultdict, ref_file_path: str, k_size:
         ref_bin_seqs_lst = [ref_bin_seq, dnaseq2int(ref_seq, True)] if get_reverse_comp else [ref_bin_seq]
         for rc_flag, ref_bin_seq in enumerate(ref_bin_seqs_lst):
             for seq_index in range(seq_len - k_size + 1):
-                # 正反链信息 occurrence
-                # 第1位：辅助位 第2位：正反链 第3-22位：occurrence
-                bin_kmer_info = (1 << 21) + (rc_flag << 20)
                 # 从ref_bin_seq中获取指定长度的kmer
                 bin_kmer = (ref_bin_seq >> (seq_index << 1)) & kmer_mask
                 if bin_kmer in ref_kmer_dict:
-                    bin_kmer_info = ref_kmer_dict[bin_kmer]
-                # occurrence +1
-                bin_kmer_info += 1
-                ref_kmer_dict[bin_kmer] = bin_kmer_info
+                    ref_kmer_dict[bin_kmer] += 1
+                else:
+                    ref_kmer_dict[bin_kmer] = 1
     ref_file.close()
     # log information
     logger.debug(
@@ -164,17 +178,19 @@ def build_read_hash_table(fa_1: str, fa_2: str, read_kmer_dict: defaultdict, k_s
     # generate read sequences from the read file
     for _ in infile_1:
         # read_seq_info_lst is a list which contains the binary sequence and the length of the sequence
-        read_seqs_info_lst = [dnaseq2int(next(infile_1))]
+        infile_1_seq = next(infile_1)
+        read_seqs_info_lst = [dnaseq2int(infile_1_seq), dnaseq2int(dna_reverse_complement(infile_1_seq))]
         if paired_reads:
             next(infile_2)
             # reverse complement the second read firstly and then convert it to a binary sequence and add it to the list
             # the paired reads are not completely overlapped
             # so the length of reverse_comp seq of second read is not equal to the length of the first read
-            read_seqs_info_lst.append(dnaseq2int(dna_reverse_complement(next(infile_2))))
+            infile_2_seq = next(infile_2)
+            read_seqs_info_lst.append(dnaseq2int(infile_2_seq))
+            read_seqs_info_lst.append(dnaseq2int(dna_reverse_complement(infile_2_seq)))
         for read_seq, seq_len in read_seqs_info_lst:
             for seq_index in range(0, seq_len - k_size + 1):
                 # get the kmer
-                # 3445035358289037568
                 bin_kmer = (read_seq >> (2 * seq_index)) & kmer_mask
                 # if bin_kmer in read_kmer_dict, the occurrence of the kmer is added 1, otherwise, the occurrence is set to 1
                 if bin_kmer in read_kmer_dict:
@@ -193,15 +209,13 @@ def assemble_seq_from_dbg_v2(dbg_graph: DeBruijnGraph, ref_file: str, change_see
     ref_kmer_dict = defaultdict(int)
     k_size = dbg_graph.k_size
     best_seq, best_seed, seed_num = '', '', change_seed
-    # build the ref_kmer dict
-    seed_kmer_size = 21
-    build_ref_hash_table(ref_kmer_dict, ref_file, seed_kmer_size, True)
+    build_ref_hash_table(ref_kmer_dict, ref_file, k_size)
     # sort the node with the occurrence of the kmer
     node_lst = sorted(dbg_graph.nodes.values(), key=lambda x: x.occur, reverse=True)
     seeds = []
     kmer_mask = (1 << (k_size << 1)) - 1
     for one_node in node_lst:
-        for seq_index in range(one_node.len - seed_kmer_size + 1):
+        for seq_index in range(one_node.len - k_size + 1):
             # 从ref_bin_seq中获取指定长度的kmer
             bin_kmer = (one_node.value >> (seq_index << 1)) & kmer_mask
             if bin_kmer in ref_kmer_dict:
@@ -227,6 +241,17 @@ def assemble_seq_from_dbg_v2(dbg_graph: DeBruijnGraph, ref_file: str, change_see
         if len(seq) > len(best_seq):
             best_seq = seq
             best_seed = seed
+
+    # correct the orientation of the sequence
+    kmer_sum = [0, 0]
+    bin_seq_lst = [dnaseq2int(best_seq), dnaseq2int(dna_reverse_complement(best_seq))]
+    for index, bin_seq_info in enumerate(bin_seq_lst):
+        bin_seq, bin_seq_len = bin_seq_info
+        for seq_index in range(bin_seq_len - k_size + 1):
+            bin_kmer = (bin_seq >> (seq_index << 1)) & kmer_mask
+            kmer_sum[index] += ref_kmer_dict[bin_kmer]
+    if kmer_sum[0] < kmer_sum[1]:
+        best_seq, best_seed = dna_reverse_complement(best_seq), dna_reverse_complement(best_seed)
     return best_seq, best_seed
 
 
@@ -253,21 +278,6 @@ def assemble_seq_from_dbg(dbg_graph: DeBruijnGraph, max_iterations=1000):
     return best_seq
 
 
-def clean_and_optimize_sequence(contig: str, forward_direction: bool = True, trim_frank_region: bool = True,
-                                remove_introns: bool = False):
-    # determine the direction of the sequence
-    if not forward_direction:
-        contig = dna_reverse_complement(contig)
-    # trim frank regions from both ends of the contig
-    if trim_frank_region:
-        ...
-
-    # remove introns
-    if remove_introns:
-        ...
-    pass
-
-
 def assemble_reads_to_seq(gene_name: str, fa_1: str, fa_2: str, ref_file_path: str, assemble_kmer: int, output_dir: str,
                           kmer_limit: int = 4,
                           dynamic_kmer: bool = False):
@@ -287,8 +297,10 @@ def assemble_reads_to_seq(gene_name: str, fa_1: str, fa_2: str, ref_file_path: s
     dbg_build_t = time.perf_counter()
     logger.debug("The de bruijn graph has been built, used {:.2f}s!".format(dbg_build_t - assemble_start_t))
     contig, seed = assemble_seq_from_dbg_v2(dBG, ref_file_path)
+    project_name = os.path.basename(output_dir.rstrip("/"))
+    # contig = dna_reverse_complement(contig) if rev_comp else contig
     with open(os.path.join(output_dir, gene_name + ".fasta"), "wt") as outfile:
-        seq_id = ">" + gene_name + "_k" + str(assemble_kmer) + '_l' + str(len(contig)) + "\n"
+        seq_id = ">" + project_name + "_" + gene_name + "_k" + str(assemble_kmer) + '_l' + str(len(contig)) + "\n"
         outfile.write(seq_id + contig + "\n")
     assemble_end_t = time.perf_counter()
     logger.debug("The gene {} has been assembled, used {:.2f}s".format(gene_name, assemble_end_t - assemble_start_t))
@@ -297,36 +309,36 @@ def assemble_reads_to_seq(gene_name: str, fa_1: str, fa_2: str, ref_file_path: s
 if __name__ == '__main__':
     pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description='''Easy353's Assembler
        zzhen@sculab ''')
-    # pars.add_argument('-i', dest='input_dir', help='Input a file(directory) with reads data', required=True)
-    # pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references", required=True)
-    # pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", required=False,
-    #                   default="assemble_out")
-    # pars.add_argument("-ak", dest="assemble_kmer", type=int, help="Kmer setting for assembling reads. Default:31",
-    #                   default=31)
-    # pars.add_argument("-at", dest="assemble_thread", type=int, help="Threads setting for assembling reads. Default:4",
-    #                   default=4)
-    # pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:3", default=2)
-    # pars.add_argument("-change_seed", dest="change_seed", type=int, help="Times of changing seed. Default:32",
-    #                   default=32)
-    # pars.add_argument("-gdk", dest="get_dynamic_kmer", action="store_true",
-    #                   help="Whether to use dynamic kmer as the kmer used for assembly.")
-    # pars.add_argument('-silent', dest='silent', action='store_true',
-    #                   help='If using silent mode, there will not output any info!')
-    # pars.add_argument('-log', dest='log_file', type=str, help='The log file.', default='assemble.log')
-    # pars.add_argument('-paired', dest='paired_reads', action='store_true',
-    #                   help='If using paired reads, please add this parameter.')
+    pars.add_argument('-i', dest='input_dir', help='Input a file(directory) with reads data', required=True)
+    pars.add_argument("-r", dest="reference", type=str, help="Input a file(directory) with references", required=True)
+    pars.add_argument("-o", dest="output_dir", type=str, help="Output directory.", required=False,
+                      default="assemble_out")
+    pars.add_argument("-ak", dest="assemble_kmer", type=int, help="Kmer setting for assembling reads. Default:31",
+                      default=31)
+    pars.add_argument("-at", dest="assemble_thread", type=int, help="Threads setting for assembling reads. Default:4",
+                      default=4)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Limit of kmer count. Default:3", default=2)
+    pars.add_argument("-change_seed", dest="change_seed", type=int, help="Times of changing seed. Default:32",
+                      default=32)
+    pars.add_argument("-gdk", dest="get_dynamic_kmer", action="store_true",
+                      help="Whether to use dynamic kmer as the kmer used for assembly.")
+    pars.add_argument('-silent', dest='silent', action='store_true',
+                      help='If using silent mode, there will not output any info!')
+    pars.add_argument('-log', dest='log_file', type=str, help='The log file.', default='assemble.log')
+    pars.add_argument('-paired', dest='paired_reads', action='store_true',
+                      help='If using paired reads, please add this parameter.')
     args = pars.parse_args()
-    args.input_dir = "/Users/zzhen/Desktop/test/filter_out"
-    args.reference = "/Users/zzhen/Desktop/test/Apiaceae353"
-    args.output_dir = "/Users/zzhen/Desktop/test/assemble_out_2"
-    args.assemble_kmer = 31
-    args.kmer_limit = 4
-    args.change_seed = 32
-    args.assemble_thread = 10
-    args.get_dynamic_kmer = False
-    args.log_file = 'assembly.log'
-    args.silent = False
-    args.paired_reads = True
+    # args.input_dir = "/Users/zzhen/Desktop/test/filter_out"
+    # args.reference = "/Users/zzhen/Desktop/test/Apiaceae353"
+    # args.output_dir = "/Users/zzhen/Desktop/test/assemble_out3"
+    # args.assemble_kmer = 31
+    # args.kmer_limit = 4
+    # args.change_seed = 32
+    # args.assemble_thread = 10
+    # args.get_dynamic_kmer = False
+    # args.log_file = 'assembly.log'
+    # args.silent = False
+    # args.paired_reads = True
 
     # set the logger
     logger = logging.getLogger(__file__)
@@ -342,7 +354,7 @@ if __name__ == '__main__':
     # 建立一个stream-handler来把日志打在CMD窗口上，级别为error以上
     ch = logging.StreamHandler(sys.stdout)
     # 当使用silent mode时，只输出error日志
-    print_level = logging.ERROR if args.silent else logging.DEBUG
+    print_level = logging.ERROR if args.silent else logging.INFO
     ch.setLevel(print_level)
     ch.setFormatter(logging.Formatter('%(message)s'))
     logger.addHandler(ch)
@@ -368,15 +380,6 @@ if __name__ == '__main__':
         shutil.rmtree(args.output_dir)
         os.makedirs(args.output_dir)
     logger.info('{} genes will be assembled with using {} threads.'.format(len(ref_path_lst), args.assemble_thread))
-    # for gene_name in gene_name_lst:
-    #     file_dict[gene_name]["ref_file"] = ref_file_path
-    #     if os.path.isdir(_input_read_path_) and os.path.isfile(os.path.join(_input_read_path_, gene_name + ".fasta")):
-    #         file_dict[gene_name]["reads_file"] = os.path.join(_input_read_path_, gene_name + ".fasta")
-    #     elif os.path.isfile(_input_read_path_) and gene_name in _input_read_path_:
-    #         file_dict[gene_name]["reads_file"] = _input_read_path_
-    #     else:
-    #         file_dict[gene_name]["reads_file"] = None
-    # Used to store information on whether the gene was filtered successfully or not
 
     if args.assemble_thread == 1:
         # when filter_thread is 1
@@ -385,43 +388,32 @@ if __name__ == '__main__':
             fa_1 = os.path.join(args.input_dir, gene_name + "_R1.fasta") if args.paired_reads else os.path.join(
                 args.input_dir, gene_name + ".fasta")
             fa_2 = os.path.join(args.input_dir, gene_name + "_R2.fasta") if args.paired_reads else fa_1
+            if not os.path.isfile(fa_1) or not os.path.isfile(fa_2):
+                logger.error('The read files of {} were not found!'.format(gene_name))
+                continue
             assemble_reads_to_seq(gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer, args.output_dir,
                                   args.kmer_limit, args.get_dynamic_kmer)
     else:
         with ProcessPoolExecutor(max_workers=min(args.assemble_thread, len(ref_path_lst))) as executor:
+            tasks = []
             for ref_file_name in ref_path_lst:
                 gene_name = os.path.splitext(os.path.basename(ref_file_name))[0]
                 fa_1 = os.path.join(args.input_dir, gene_name + "_R1.fasta") if args.paired_reads else os.path.join(
                     args.input_dir, gene_name + ".fasta")
                 fa_2 = os.path.join(args.input_dir, gene_name + "_R2.fasta") if args.paired_reads else fa_1
-                executor.submit(assemble_reads_to_seq, gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer,
-                                args.output_dir, args.kmer_limit, args.get_dynamic_kmer)
-            # for future in as_completed(futures):
-            #     assemble_gene_info_dict.update(future.result())
-            #     count += 1
-            #     if count % 10 == 0:
-            #         print("INFO: {} / {} genes have been assembled!".format(count, len(file_dict)))
+                if not os.path.isfile(fa_1) or not os.path.isfile(fa_2):
+                    logger.error('The read files of {} were not found!'.format(gene_name))
+                    continue
+                tasks.append(
+                    executor.submit(assemble_reads_to_seq, gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer,
+                                    args.output_dir, args.kmer_limit, args.get_dynamic_kmer))
+            task_count = 0
+            for future in as_completed(tasks):
+                task_count += 1
+                if task_count % 10 == 0:
+                    logger.info("{} / {} genes have been assembled!".format(task_count, len(ref_path_lst)))
+                if task_count == len(ref_path_lst):
+                    logger.info("All genes have been assembled!".format(task_count, len(ref_path_lst)))
+
     t_assemble_end = time.perf_counter()
     logger.info('Total time used for assembly: {:.2f} s'.format(t_assemble_end - t_assemble_start))
-
-    # read_kmer_dict = defaultdict(int)
-    # fa_1 = "/Users/zzhen/Desktop/test/bin_filter_test/4724_R1.fasta"
-    # fa_2 = "/Users/zzhen/Desktop/test/bin_filter_test/4724_R2.fasta"
-    # ref_file_path = "/Users/zzhen/Desktop/test/Glycine_353/4724.fasta"
-    # kmer_limit = 3
-    # build_read_hash_table(fa_1, fa_2, read_kmer_dict, 21)
-    # # remove low occurrence kmers based on the kmer_limit
-    # read_kmer_dict = {kmer: count for kmer, count in read_kmer_dict.items() if count >= kmer_limit}
-    # start_t = time.perf_counter()
-    # dBG = DeBruijnGraph(k_size=21)
-    # dBG.build_de_bruijn_graph(read_kmer_dict)
-    # dBG.simple_de_bruijn_graph()
-    # dBG.dbg_compress_nodes()
-    # print(assemble_seq_from_dbg(dBG))
-    # end_t = time.perf_counter()
-    # logger.info("build de bruijn graph used {:.2f}s".format(end_t - start_t))
-    # print(get_ref_sequence("/Users/zzhen/Desktop/test/Glycine_353/4471.fasta"))
-
-    # overlap_lst = get_dynamic_kmer(fa_1, fa_2, ref_file_path, 21, 51)
-    # print(overlap_lst)
-    # print(get_ref_direction(fa_1, fa_2, ref_file_path))
