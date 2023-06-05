@@ -24,50 +24,50 @@ from Easy353Lib.assemble import assemble_reads_to_seq
 if __name__ == "__main__":
     pars = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, usage='%(prog)s [options]',
                                    description="Easy353 zzhen@sculab")
-    # pars.add_argument('-1', dest='fq_file_1', type=str, help='Specify the input sequencing file(s) -1 (.fq/.gz).',
-    #                   required=False)
-    # pars.add_argument('-2', dest='fq_file_2', type=str, help='Specify the input sequencing file(s) -2 (.fq/.gz).',
-    #                   required=False)
-    # pars.add_argument('-r', dest='reference', type=str, help='Specify an input reference file or directory.')
-    # pars.add_argument('-o', dest='out_dir', type=str, help='Designate the output directory.', default='easy353_out')
-    # pars.add_argument('-fk', dest='filter_kmer', type=int, help='Set the kmer for filtering reads. Default:21',
-    #                   default=21)
-    # pars.add_argument('-s', dest='step_length', type=int,
-    #                   help='Determine the length of the sliding window on the reads. Default:1', default=1)
-    # pars.add_argument('-ft', dest='filter_thread', type=int,
-    #                   help='Set the number of threads for filtering reads. Default:4', default=4)
-    # pars.add_argument("-ak", dest="assemble_kmer", type=int, help="Set the kmer for assembling reads. Default:31",
-    #                   default=31)
-    # pars.add_argument("-at", dest="assemble_thread", type=int, help="Set the number of threads for assembling reads. Default:8",
-    #                   default=8)
-    # pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Set a limit of kmer count. Default:4", default=4)
-    # pars.add_argument('-fpr', dest='filter_pair_read', action='store_true',
-    #                   help='Enable fpr mode to get more filtered reads. Tradeoff between obtaining more reads (yes) or saving time (no).')
-    # pars.add_argument("-change_seed", dest="change_seed", type=int, help="Specify the number of seed changes. Default:32",
-    #                   default=32)
-    # pars.add_argument("-gdk", dest="get_dynamic_kmer", action="store_true",
-    #                   help="Choose whether to use dynamic kmer as the kmer used for assembly.")
-    # pars.add_argument('-log', dest='log_file', type=str, help='Specify the log file.', default='easy353.log')
-    # pars.add_argument('-silent', dest='silent', action='store_true',
-    #                   help='Enable silent mode. When active, the program will not output any information.')
+    pars.add_argument('-1', dest='fq_file_1', type=str, help='Specify the input sequencing file(s) -1 (.fq/.gz).',
+                      required=False)
+    pars.add_argument('-2', dest='fq_file_2', type=str, help='Specify the input sequencing file(s) -2 (.fq/.gz).',
+                      required=False)
+    pars.add_argument('-r', dest='reference', type=str, help='Specify an input reference file or directory.')
+    pars.add_argument('-o', dest='out_dir', type=str, help='Designate the output directory.', default='easy353_out')
+    pars.add_argument('-fk', dest='filter_kmer', type=int, help='Set the kmer for filtering reads. Default:21',
+                      default=21)
+    pars.add_argument('-s', dest='step_length', type=int,
+                      help='Determine the length of the sliding window on the reads. Default:1', default=1)
+    pars.add_argument('-ft', dest='filter_thread', type=int,
+                      help='Set the number of threads for filtering reads. Default:4', default=4)
+    pars.add_argument("-ak", dest="assemble_kmer", type=int, help="Set the kmer for assembling reads. Default:31",
+                      default=31)
+    pars.add_argument("-at", dest="assemble_thread", type=int, help="Set the number of threads for assembling reads. Default:8",
+                      default=8)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Set a limit of kmer count. Default:4", default=4)
+    pars.add_argument('-fpr', dest='filter_pair_read', action='store_true',
+                      help='Enable fpr mode to get more filtered reads. Tradeoff between obtaining more reads (yes) or saving time (no).')
+    pars.add_argument("-change_seed", dest="change_seed", type=int, help="Specify the number of seed changes. Default:32",
+                      default=32)
+    pars.add_argument("-gdk", dest="get_dynamic_kmer", action="store_true",
+                      help="Choose whether to use dynamic kmer as the kmer used for assembly.")
+    pars.add_argument('-log', dest='log_file', type=str, help='Specify the log file.', default='easy353.log')
+    pars.add_argument('-silent', dest='silent', action='store_true',
+                      help='Enable silent mode. When active, the program will not output any information.')
     args = pars.parse_args()
 
-    args.fq_file_1 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.1.fq.gz'
-    args.fq_file_2 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.2.fq.gz'
-    args.reference = '/Users/zzhen/Desktop/test/Apiaceae353'
-    args.out_dir = '/Users/zzhen/Desktop/test/Apiaceae353_out'
-    args.filter_kmer = 21
-    args.step_length = 1
-    args.filter_thread = 8
-    args.filter_pair_read = False
-    args.silent = False
-    args.assemble_kmer = 31
-    args.kmer_limit = 4
-    args.change_seed = 32
-    args.assemble_thread = 10
-    args.get_dynamic_kmer = False
-    args.log_file = 'easy353.log'
-    args.silent = False
+    # args.fq_file_1 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.1.fq.gz'
+    # args.fq_file_2 = '/Volumes/zzhen/data/work_data/Easy353/empirical_data/tran_apiaceae/Anthriscus_sylvestris.2.fq.gz'
+    # args.reference = '/Users/zzhen/Desktop/test/Apiaceae353'
+    # args.out_dir = '/Users/zzhen/Desktop/test/Apiaceae353_out'
+    # args.filter_kmer = 21
+    # args.step_length = 1
+    # args.filter_thread = 8
+    # args.filter_pair_read = False
+    # args.silent = False
+    # args.assemble_kmer = 31
+    # args.kmer_limit = 4
+    # args.change_seed = 32
+    # args.assemble_thread = 10
+    # args.get_dynamic_kmer = False
+    # args.log_file = 'easy353.log'
+    # args.silent = False
 
     # set the logger
     logger = logging.getLogger("easy353")
