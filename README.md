@@ -155,9 +155,6 @@ Please use the Easy353-gui.app or Easy353-gui.exe from https://github.com/plant7
 
 ![image-20220629211901122](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220629211901.png)
 
-## User manual
-
-A more complete manual is here: https://github.com/plant720/Easy353/blob/master/docs/manual.pdf
 
 ## Contact
 
