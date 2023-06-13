@@ -123,19 +123,19 @@ build_database.py -o 353_ref_Fabaceae -c Fabaceae -t 10 -exclude Glycine_max -ge
 2. Run the Easy353, the following is an example of the command syntax:
 
 ```shell
-easy353.py -1 <input_file1> -2 <input_file2> -r <reference_dir> -o <output_dir> -k1 <filter_kmer> -k2 <assemble_kmer> -t1 <filter_thread> -t2 <assemble_thread>
+easy353.py -1 <input_file1> -2 <input_file2> -r <reference_dir> -o <output_dir> -fk <filter_kmer> -ak <assemble_kmer> -ft <filter_thread> -at <assemble_thread>
 
 ## The parameters used in the command are explained below:
 -1 -2: the input files with paired-end reads, given in FASTQ format. 
 -r: the reference directory
 -o: the output directory
--k1: K-mer length setting for filtering
--k2: K-mer length setting for assembly
--t1: the threads setting for reads filtering
--t2: the threads setting for reads assembly
+-fk: K-mer length setting for filtering
+-ak: K-mer length setting for assembly
+-ft: the threads setting for reads filtering
+-at: the threads setting for reads assembly
 
 # An example
-easy353.py -1 Gmax_sim_1.fastq.gz -2 Gmax_sim_2.fastq.gz -r Fabaceae353 -o test_package -k1 31 -k2 41 -t1 1 -t2 4
+easy353.py -1 Gmax_sim_1.fastq.gz -2 Gmax_sim_2.fastq.gz -r Fabaceae353 -o test_package -fk 31 -ak 41 -ft 1 -at 4
 ```
 
 3. Now, you can view the result of Easy353 within the output directory:
@@ -155,9 +155,6 @@ Please use the Easy353-gui.app or Easy353-gui.exe from https://github.com/plant7
 
 ![image-20220629211901122](https://cdn.jsdelivr.net/gh/plant720/TyporaPic/img/20220629211901.png)
 
-## User manual
-
-A more complete manual is here: https://github.com/plant720/Easy353/blob/master/docs/manual.pdf
 
 ## Contact
 
