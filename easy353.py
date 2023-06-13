@@ -38,12 +38,15 @@ if __name__ == "__main__":
                       help='Set the number of threads for filtering reads. Default:4', default=4)
     pars.add_argument("-ak", dest="assemble_kmer", type=int, help="Set the kmer for assembling reads. Default:31",
                       default=31)
-    pars.add_argument("-at", dest="assemble_thread", type=int, help="Set the number of threads for assembling reads. Default:8",
+    pars.add_argument("-at", dest="assemble_thread", type=int,
+                      help="Set the number of threads for assembling reads. Default:8",
                       default=8)
-    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Set a limit of kmer count. Default:4", default=4)
+    pars.add_argument("-kmer_limit", dest="kmer_limit", type=int, help="Set a limit of kmer count. Default:4",
+                      default=4)
     pars.add_argument('-fpr', dest='filter_pair_read', action='store_true',
                       help='Enable fpr mode to get more filtered reads. Tradeoff between obtaining more reads (yes) or saving time (no).')
-    pars.add_argument("-change_seed", dest="change_seed", type=int, help="Specify the number of seed changes. Default:32",
+    pars.add_argument("-change_seed", dest="change_seed", type=int,
+                      help="Specify the number of seed changes. Default:32",
                       default=32)
     pars.add_argument("-gdk", dest="get_dynamic_kmer", action="store_true",
                       help="Choose whether to use dynamic kmer as the kmer used for assembly.")
@@ -105,7 +108,7 @@ if __name__ == "__main__":
     else:
         # spawn方式 子进程会copy一份父进程的资源，导致内存占用较大
         multiprocessing.set_start_method('spawn')
-    logger.info("="*80)
+    logger.info("=" * 80)
     logger.info("Easy353: A tool to get Angiosperms353 genes for phylogenomic research")
     logger.info("Version: 2.0.1")
     logger.info("Author: zzhen")
@@ -221,7 +224,7 @@ if __name__ == "__main__":
                 filter_out, gene_name + ".fasta")
             fa_2 = os.path.join(filter_out, gene_name + "_R2.fasta") if paired_reads else fa_1
             assemble_reads_to_seq(gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer, assemble_out,
-                                  args.kmer_limit, args.get_dynamic_kmer)
+                                  args.kmer_limit, args.change_seed, args.get_dynamic_kmer)
     else:
         with ProcessPoolExecutor(max_workers=min(args.assemble_thread, len(ref_path_lst))) as executor:
             tasks = []
@@ -231,8 +234,7 @@ if __name__ == "__main__":
                     filter_out, gene_name + ".fasta")
                 fa_2 = os.path.join(filter_out, gene_name + "_R2.fasta") if paired_reads else fa_1
                 tasks.append(executor.submit(assemble_reads_to_seq, gene_name, fa_1, fa_2, ref_file_name,
-                                             args.assemble_kmer,
-                                             assemble_out, args.kmer_limit, args.get_dynamic_kmer))
+                                             args.assemble_kmer, assemble_out, args.kmer_limit, args.change_seed, args.get_dynamic_kmer))
             count = 0
             for future in as_completed(tasks):
                 count += 1

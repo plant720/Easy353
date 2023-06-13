@@ -191,8 +191,8 @@ def main():
                 count += 1
                 if future.result() is not None:
                     print(future.result())
-                # if count % 10 == 0:
-                print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
+                if count % 10 == 0:
+                    print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
                 if count == len(down_spec_info):
                     print("INFO: All species have been downloaded")
     if args.exclude is not None:

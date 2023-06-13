@@ -43,7 +43,8 @@ sys.stdout.write("Python " + str(sys.version).replace("\n", " ") + "\n")
 sys.stdout.write("PLATFORM: " + " ".join(platform.uname()) + "\n")
 sys.stdout.write("Using setuptools " + str(setuptools.__version__) + "\n")
 
-scripts_to_install = ["easy353.py", "build_database.py"]
+scripts_to_install = ["easy353.py", "build_database.py", "script/add_353species.py", "script/correct_seq_ori.py",
+                      'script/multi_sample_gene_merge.py', "script/process_combined_seq.py"]
 
 setup(
     name="Easy353",

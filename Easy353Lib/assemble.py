@@ -279,8 +279,7 @@ def assemble_seq_from_dbg(dbg_graph: DeBruijnGraph, max_iterations=1000):
 
 
 def assemble_reads_to_seq(gene_name: str, fa_1: str, fa_2: str, ref_file_path: str, assemble_kmer: int, output_dir: str,
-                          kmer_limit: int = 4,
-                          dynamic_kmer: bool = False):
+                          kmer_limit: int = 4, change_seed: int = 32, dynamic_kmer: bool = False):
     assemble_start_t = time.perf_counter()
     read_kmer_dict = defaultdict(int)
     # build the hash table based on the reads file
@@ -296,7 +295,7 @@ def assemble_reads_to_seq(gene_name: str, fa_1: str, fa_2: str, ref_file_path: s
     dBG.dbg_compress_nodes()
     dbg_build_t = time.perf_counter()
     logger.debug("The de bruijn graph has been built, used {:.2f}s!".format(dbg_build_t - assemble_start_t))
-    contig, seed = assemble_seq_from_dbg_v2(dBG, ref_file_path)
+    contig, seed = assemble_seq_from_dbg_v2(dBG, ref_file_path, change_seed)
     project_name = os.path.basename(output_dir.rstrip("/"))
     # contig = dna_reverse_complement(contig) if rev_comp else contig
     with open(os.path.join(output_dir, gene_name + ".fasta"), "wt") as outfile:
@@ -392,7 +391,7 @@ if __name__ == '__main__':
                 logger.error('The read files of {} were not found!'.format(gene_name))
                 continue
             assemble_reads_to_seq(gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer, args.output_dir,
-                                  args.kmer_limit, args.get_dynamic_kmer)
+                                  args.kmer_limit, args.change_seed, args.get_dynamic_kmer)
     else:
         with ProcessPoolExecutor(max_workers=min(args.assemble_thread, len(ref_path_lst))) as executor:
             tasks = []
@@ -406,7 +405,7 @@ if __name__ == '__main__':
                     continue
                 tasks.append(
                     executor.submit(assemble_reads_to_seq, gene_name, fa_1, fa_2, ref_file_name, args.assemble_kmer,
-                                    args.output_dir, args.kmer_limit, args.get_dynamic_kmer))
+                                    args.output_dir, args.kmer_limit, args.change_seed, args.get_dynamic_kmer))
             task_count = 0
             for future in as_completed(tasks):
                 task_count += 1
