@@ -13,7 +13,7 @@ import os
 import re
 from collections import defaultdict
 from urllib.error import HTTPError
-from urllib.request import urlretrieve
+from urllib.request import urlopen
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Bio import SeqIO
 import Easy353Lib
@@ -86,7 +86,9 @@ def download_fasta_file(_spec_info_: dict, output_dir: str):
         info = "INFO: File {} already exists".format(file_path)
     else:
         try:
-            urlretrieve(url, file_path)
+            response = urlopen(url, timeout=10)
+            with open(file_path, 'wb') as f:
+                f.write(response.read())
         except HTTPError:
             info = "INFO: Url {} does not exist".format(url)
         except Exception as e:

@@ -17,9 +17,9 @@ import psutil
 import threading
 from collections import defaultdict
 from urllib.error import HTTPError
-from urllib.request import urlretrieve
+from urllib.request import urlopen
 import PySimpleGUI as sg
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from Easy353Lib.assemble import assemble_reads_to_seq
 # import my python file
@@ -275,7 +275,9 @@ def download_files(_spec_info_: dict, output_dir: str):
         info = "INFO: File {} already exists".format(file_path)
     else:
         try:
-            urlretrieve(url, file_path)
+            response = urlopen(url, timeout=10)
+            with open(file_path, 'wb') as f:
+                f.write(response.read())
         except HTTPError:
             info = "INFO: Url {} does not exist".format(url)
         except Exception as e:
@@ -313,6 +315,7 @@ def download_species_thread(output_dir: str, classification: list, window: sg.Wi
                 print("INFO: {} / {} has been downloaded".format(count, len(down_spec_info)))
             if count == len(down_spec_info):
                 print("INFO: All species have been downloaded")
+            pass
     print("INFO: Download finished!")
     # communicating to the main process
     window.write_event_value('-DOWNLOAD DONE-', "-DOWNLOAD DONE-")
@@ -368,7 +371,6 @@ def easy353_thread(window: sg.Window, fq_file_1: str, fq_file_2: str, reference:
     # 处理输入的测序文件
     if not fq_file_1 and not fq_file_2:
         raise RuntimeError('There were no sequencing files inputted.')
-
     if filter_thread == 1:
         # when filter_thread is 1
         reads_bin_filter(reference, ref_kmer_dict, filter_kmer, step_length,
@@ -416,7 +418,7 @@ def easy353_thread(window: sg.Window, fq_file_1: str, fq_file_2: str, reference:
             assemble_reads_to_seq(gene_name, fa_1, fa_2, ref_file_name, assemble_kmer, assemble_out,
                                   kmer_limit, change_seed, get_dynamic_kmer)
     else:
-        with ProcessPoolExecutor(max_workers=min(assemble_thread, len(ref_path_lst))) as executor:
+        with ThreadPoolExecutor(max_workers=min(assemble_thread, len(ref_path_lst))) as executor:
             tasks = []
             for ref_file_name in ref_path_lst:
                 gene_name = os.path.splitext(os.path.basename(ref_file_name))[0]
@@ -475,7 +477,7 @@ def easy353_gui():
 
             window['-s-'].update(1)
             window['-change_seed-'].update(32)
-            window['-kmer_limit-'].update(2)
+            window['-kmer_limit-'].update(4)
             window['-minimum_length_ratio-'].update(0.8)
             window['-filter_pair_read-'].update(False)
             window['-get_dynamic_kmer-'].update(False)
@@ -636,14 +638,13 @@ def easy353_gui():
                 target=easy353_thread,
                 args=(window, fq_file_1, fq_file_2, reference, easy353_out, filter_kmer, filter_thread, assemble_kmer,
                       assemble_thread, step_length, change_seed, kmer_limit, filter_pair_read, get_dynamic_kmer),
-                daemon=True)
+                daemon=False)
             thread.start()
         if event == "-ASSEMBLE DONE-":
             thread.join(timeout=0)
             # set thread None
             thread = None
             print("INFO: All steps have been completed!")
-
     window.close()
 
 
