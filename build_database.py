@@ -81,18 +81,24 @@ def generate_download_info(classification_dict: dict) -> list:
 def download_fasta_file(_spec_info_: dict, output_dir: str):
     info = None
     url = _spec_info_['Fasta file url']
-    file_path = os.path.join(output_dir, _spec_info_['Fasta file name'])
-    if os.path.isfile(file_path):
-        info = "INFO: File {} already exists".format(file_path)
-    else:
-        try:
-            response = urlopen(url, timeout=10)
-            with open(file_path, 'wb') as f:
-                f.write(response.read())
-        except HTTPError:
-            info = "INFO: Url {} does not exist".format(url)
-        except Exception as e:
-            info = "ERROR: {}".format(e)
+    alternative_url = _spec_info_['Alternative url']
+    file_path = os.path.join(output_dir, url.split("/")[-1])
+    for _ in range(2):
+        if os.path.isfile(file_path):
+            info = "INFO: File {} already exists".format(file_path)
+            break
+        else:
+            try:
+                response = urlopen(url, timeout=10)
+                with open(file_path, 'wb') as f:
+                    f.write(response.read())
+                break
+            except HTTPError:
+                info = "INFO: Url {} does not exist".format(url)
+                break
+            except Exception as e:
+                info = "ERROR: {}. The alternative url is used to download files".format(e)
+                url = alternative_url
     return info
 
 
