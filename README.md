@@ -135,7 +135,7 @@ easy353.py -1 <input_file1> -2 <input_file2> -r <reference_dir> -o <output_dir> 
 -at: the threads setting for reads assembly
 
 # An example
-easy353.py -1 Gmax_sim_1.fastq.gz -2 Gmax_sim_2.fastq.gz -r Fabaceae353 -o test_package -fk 31 -ak 41 -ft 1 -at 4
+easy353.py -1 Gmax_sim_1.fastq.gz -2 Gmax_sim_2.fastq.gz -r 353_ref_Fabaceae/353gene -o test_package -fk 31 -ak 41 -ft 1 -at 4
 ```
 
 3. Now, you can view the result of Easy353 within the output directory:
