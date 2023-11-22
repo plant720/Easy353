@@ -96,6 +96,37 @@ source ~/.bashrc
 pip install biopython psutil requests beautifulsoup4
 ```
 
+## Update
+
+This  section provides a step-by-step guide on how to update Easy353. The update process involves two main steps: uninstalling the old version and installing the new one.
+
+#### 1. Uninstallation
+
+The method for uninstallation depends on how Easy353 was initially installed.
+
+##### Option 1: Using the setup.py
+
+1. **Uninstall easy353 using pip3**:
+   - Run the command `pip3 uninstall easy353` to remove the installed package.
+
+2. **Delete the Downloaded Folder**:
+   - Remove the previously downloaded Easy353 folder from your system.
+
+##### Option 2: In situ Configuration
+
+- **Direct Deletion**:
+  - Simply delete the previously downloaded Easy353 folder from your system.
+
+#### 2. Installation of the New Version
+
+After successfully uninstalling the old version:
+
+1. **Download the Latest Version**:
+   - Use Git to clone or download the new version of Easy353.
+
+2. **Follow Installation Steps**:
+   - Proceed with the installation steps as described in the section of `Download and Installation`.
+
 ## Usage
 
 **Note: The detailed usage and tutorials can be found at [Easy353/wiki](https://github.com/plant720/Easy353/wiki)**.
