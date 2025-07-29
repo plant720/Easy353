@@ -6,7 +6,7 @@
 
 **Notice: The Easy353 has been updated to v2.0.1, which is faster and more accurate.**
 
-**NOTE: We have specifically developed a enhanced graphical interface version, EasyMiner, for Windows and macOS (developing). Please visit EasyMiner on [GitHub](https://github.com/sculab/EasyMiner) or [Gitee](https://gitee.com/sculab/EasyMiner) for details.**
+**NOTE: We have specifically developed a enhanced graphical interface version, GeneMiner2, for Windows and macOS (developing). Please visit GeneMiner2 on [GitHub](https://github.com/sculab/GeneMiner2) or [Gitee](https://gitee.com/sculab/GeneMiner2) for details.**
 
 Please cite the following manuscript if you use the Easy353:
 
